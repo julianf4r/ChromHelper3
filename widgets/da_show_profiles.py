@@ -36,9 +36,10 @@ class ShowProfilesModel(QAbstractTableModel):
 
 class DaShowProfiles(QDialog):
 
-    def __init__(self, userdata_dir: str, parent=None):
+    def __init__(self, userdata_dir: str, exec_path: str, parent=None):
         super().__init__(parent)
         self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
         self.process = QProcess(self)
 
         self.vly_m = QVBoxLayout()
@@ -79,10 +80,7 @@ class DaShowProfiles(QDialog):
         indexes = self.trv_p.selectedIndexes()
         profile_ids = [index.data(Qt.ItemDataRole.DisplayRole) for index in indexes if index.column() == 0]
 
-        cmd = rf'"C:\Program Files\Google\Chrome\Application\chrome.exe" --user-data-dir="{self.userdata_dir}" --profile-directory="{{0}}"'
+        cmd = rf'"{self.exec_path}" --user-data-dir="{self.userdata_dir}" --profile-directory="{{0}}"'
         for profile_id in profile_ids:
             self.process.startCommand(cmd.format(profile_id))
             self.process.waitForFinished(10000)
-
-
-

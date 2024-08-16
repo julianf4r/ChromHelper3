@@ -67,12 +67,14 @@ class TabBookmarks(QWidget):
             bookmarks: dict[str, Bookmark] = None,
             profiles: dict[str, Profile] = None,
             userdata_dir: str = "",
-            parent=None
+            exec_path: str = "",
+            parent: QWidget = None
     ):
         super().__init__(parent)
         self.bookmarks = bookmarks or {}
         self.profiles = profiles or {}
         self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -107,13 +109,21 @@ class TabBookmarks(QWidget):
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(model)
 
-        ds = DaShowProfiles(self.userdata_dir, self)
+        ds = DaShowProfiles(self.userdata_dir, self.exec_path, self)
         ds.setWindowTitle(bmk.name)
         ds.lne_mark.setText(bmk.url)
         ds.trv_p.setModel(proxy_model)
         ds.exec()
 
-    def update_model(self, bookmarks: dict[str, Bookmark], profiles: dict[str, Profile]):
+    def update_model(
+            self,
+            bookmarks: dict[str, Bookmark],
+            profiles: dict[str, Profile],
+            userdata_dir: str,
+            exec_path: str,
+    ):
         self.bookmarks = bookmarks
         self.profiles = profiles
+        self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
         self.bookmarks_model.update_data(bookmarks)

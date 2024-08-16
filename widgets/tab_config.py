@@ -7,12 +7,14 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QComboBox, QLineEdit, QDialog, QToolButton,
+    QMessageBox, QFileDialog,
 )
 
-from jnp3.gui import CardsArea
-from chromy import get_browser_exec_path, get_browser_data_path
+from jnp3.gui import CardsArea, Card, accept_warning
+from chromy import get_browser_exec_path
 
 from core.utils import get_icon_path, SUPPORTED_BROWSERS
+from core.db_operations import DBManger
 
 
 class IconListModel(QAbstractListModel):
@@ -34,8 +36,10 @@ class IconListModel(QAbstractListModel):
 
 class DaUserDataEdit(QDialog):
 
-    def __init__(self, parent=None):
+    def __init__(self, exists_names: list[str], parent: QWidget = None):
         super().__init__(parent)
+        self.exists_names = exists_names
+
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
 
@@ -95,6 +99,8 @@ class DaUserDataEdit(QDialog):
         self.pbn_save.clicked.connect(self.on_pbn_save_clicked)
         self.pbn_cancel.clicked.connect(self.on_pbn_cancel_clicked)
         self.cmbx_icons.currentIndexChanged.connect(self.on_cmbx_icons_current_index_changed)
+        self.tbn_exec.clicked.connect(self.on_tbn_exec_clicked)
+        self.tbn_data.clicked.connect(self.on_tbn_data_clicked)
 
         # 手动触发一次
         self.on_cmbx_icons_current_index_changed(0)
@@ -106,11 +112,22 @@ class DaUserDataEdit(QDialog):
             self.lne_exec.setText(browser_path)
         else:
             self.lne_exec.clear()
-        data_path = get_browser_data_path(browser)
-        if data_path is not None:
-            self.lne_data.setText(data_path)
-        else:
-            self.lne_data.clear()
+        # 如果真的要添加，那肯定是除了默认位置之外的，所以这里就不填充了
+        # 因为默认的位置可以在初始化时自动填充，如果默认的没了，就重置数据库吧
+
+    def on_tbn_exec_clicked(self):
+        filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", "../")
+        if len(filename) == 0:
+            return
+
+        self.lne_exec.setText(filename)
+
+    def on_tbn_data_clicked(self):
+        dirname = QFileDialog.getExistingDirectory(self, "打开用户数据目录", "../")
+        if len(dirname) == 0:
+            return
+
+        self.lne_data.setText(dirname)
 
     def sizeHint(self):
         return QSize(640, 120)
@@ -119,6 +136,20 @@ class DaUserDataEdit(QDialog):
         self.reject()
 
     def on_pbn_save_clicked(self):
+        if len(self.lne_name.text()) == 0:
+            QMessageBox.critical(self, "错误", "名称不能为空！")
+            return
+        if len(self.lne_data.text()) == 0:
+            QMessageBox.critical(self, "错误", "用户路径不能为空！")
+            return
+        if accept_warning(self, len(self.lne_exec.text()) == 0, "警告",
+                          "如果执行文件路径为空，不影响查看，但无法打开浏览器窗口，要继续吗？"):
+            return
+
+        if self.lne_name.text() in self.exists_names:
+            QMessageBox.critical(self, "错误", "该名称已存在，请更换一个。")
+            return
+
         self.accept()
 
 
@@ -155,9 +186,15 @@ class WgUserDataDisplay(QWidget):
 
 class TabConfig(QWidget):
 
-    def __init__(self, parent=None):
+    def __init__(
+            self,
+            dbm: DBManger,
+            parent: QWidget = None,
+    ):
         super().__init__(parent)
-
+        self.dbm = dbm
+        # 这里无所谓，后面 reset 的时候会填充这个数据，所以此时为空就行
+        self.userdata_info = []  # [[name, type, exec, data]]
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
 
@@ -171,21 +208,58 @@ class TabConfig(QWidget):
         self.vly_m.addWidget(self.ca_m)
 
         self.pbn_add.clicked.connect(self.on_pbn_add_clicked)
+        self.ca_m.card_removed.connect(self.on_card_removed)
+
+        # 这个要在最后，第一次填充也相当于重置
+        self.reset_cards(is_init=True)
 
     def on_pbn_add_clicked(self):
-        de = DaUserDataEdit(self)
+        exists_names = [c.title for c in self.ca_m.cards]
+        de = DaUserDataEdit(exists_names, self)
         de.setWindowTitle("添加用户数据")
         state = de.exec()
         if state == QDialog.DialogCode.Accepted:
             wg_ud = WgUserDataDisplay(self)
-            wg_ud.set_exec_path(de.lne_exec.text())
-            wg_ud.set_data_path(de.lne_data.text())
+            name = de.lne_name.text()
+            type_ = de.cmbx_icons.currentData(Qt.ItemDataRole.DisplayRole)  # 这里跟显示名称一样
+            exec_path = de.lne_exec.text()
+            data_path = de.lne_data.text()
+
+            wg_ud.set_exec_path(exec_path)
+            wg_ud.set_data_path(data_path)
 
             self.ca_m.add_card(
                 widget=wg_ud,
-                title=de.lne_name.text(),
+                title=name,
                 icon=de.cmbx_icons.currentData(Qt.ItemDataRole.DecorationRole),
             )
 
+            self.dbm.insert_one(name, type_, exec_path, data_path)
+
+    def on_card_removed(self, card: Card):
+        self.dbm.delete_one(card.title)
+
+    def reset_cards(self, is_init: bool = False):
+        # 清空卡片
+        while len(self.ca_m.cards) > 0:
+            card = self.ca_m.cards[-1]
+            self.ca_m.remove_card(card)
+
+        # 如果是打开软件，就不重置，因为还会想保留上次的路径
+        if not is_init:
+            self.dbm.reset()
+        # 填充数据
+        self.userdata_info = self.dbm.select_all()
+        # 填充卡片
+        for userdata in self.userdata_info:
+            wg_ud = WgUserDataDisplay(self)
+            wg_ud.set_exec_path(userdata[2])
+            wg_ud.set_data_path(userdata[3])
+
+            self.ca_m.add_card(
+                widget=wg_ud,
+                title=userdata[0],
+                icon=QIcon(get_icon_path(userdata[1])),
+            )
 
 

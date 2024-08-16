@@ -12,7 +12,11 @@ from PySide6.QtWidgets import (
 
 from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
-from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
+from core.utils import (
+    sort_profiles_id_func,
+    ProfileSortFilterProxyModel,
+    get_icon_path
+)
 
 
 class ExtensionsModel(QAbstractTableModel):
@@ -40,7 +44,10 @@ class ExtensionsModel(QAbstractTableModel):
                 return ext.description
         elif role == Qt.ItemDataRole.DecorationRole:
             if col == 0:
-                return QIcon(ext.icon)
+                if len(ext.icon) == 0:
+                    return QIcon(get_icon_path("none"))
+                else:
+                    return QIcon(ext.icon)
         elif role == Qt.ItemDataRole.UserRole:
             return ext.id
 
@@ -69,12 +76,14 @@ class TabExtensions(QWidget):
             extensions: dict[str, Extension] = None,
             profiles: dict[str, Profile] = None,
             userdata_dir: str = "",
+            exec_path: str = "",
             parent=None
     ):
         super().__init__(parent)
         self.extensions = extensions or {}
         self.profiles = profiles or {}
         self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -109,14 +118,22 @@ class TabExtensions(QWidget):
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(model)
 
-        ds = DaShowProfiles(self.userdata_dir, self)
+        ds = DaShowProfiles(self.userdata_dir, self.exec_path, self)
         ds.setWindowTitle(ext.name)
         ds.setWindowIcon(QIcon(ext.icon))
         ds.lne_mark.setText(ext.id)
         ds.trv_p.setModel(proxy_model)
         ds.exec()
 
-    def update_model(self, extensions: dict[str, Extension], profiles: dict[str, Profile]):
+    def update_model(
+            self,
+            extensions: dict[str, Extension],
+            profiles: dict[str, Profile],
+            userdata_dir: str,
+            exec_path: str,
+    ):
         self.profiles = profiles
         self.extensions = extensions
+        self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
         self.extensions_model.update_data(extensions)

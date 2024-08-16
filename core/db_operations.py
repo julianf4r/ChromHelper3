@@ -74,5 +74,3 @@ class DBManger(object):
     def delete_one(self, name: str):
         self.sqh.delete_from(U.table, where=Operand(U.name).equal_to(name))
 
-
-

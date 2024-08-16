@@ -107,11 +107,13 @@ class MwChromHelper(QMainWindow):
         self.tab_profiles = TabProfiles(parent=self)
         self.tab_extensions = TabExtensions(parent=self)
         self.tab_bookmarks = TabBookmarks(parent=self)
-        self.tab_config = TabConfig(self)
+        self.tab_config = TabConfig(self.dbm, parent=self)
         self.tw_right.addTab(self.tab_profiles, QIcon(get_icon_path("profile")), "用户页")
         self.tw_right.addTab(self.tab_extensions, QIcon(get_icon_path("extension")), "插件页")
         self.tw_right.addTab(self.tab_bookmarks, QIcon(get_icon_path("bookmark")), "书签页")
         self.tw_right.addTab(self.tab_config, "配置页")
+
+        self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
 
         # ================== END UI =====================
 
@@ -119,12 +121,20 @@ class MwChromHelper(QMainWindow):
         self.userdata_model = UserDataListModel(userdata_info, self)
         self.trv_left.setModel(self.userdata_model)
 
-        self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
-
-    def update_all_data(self, chrom_ins: ChromInstance):
+    def update_all_data(self, chrom_ins: ChromInstance, exec_path: str):
         self.tab_profiles.update_model(chrom_ins.profiles)
-        self.tab_extensions.update_model(chrom_ins.extensions, chrom_ins.profiles)
-        self.tab_bookmarks.update_model(chrom_ins.bookmarks, chrom_ins.profiles)
+        self.tab_extensions.update_model(
+            chrom_ins.extensions,
+            chrom_ins.profiles,
+            chrom_ins.userdata_dir,
+            exec_path,
+        )
+        self.tab_bookmarks.update_model(
+            chrom_ins.bookmarks,
+            chrom_ins.profiles,
+            chrom_ins.userdata_dir,
+            exec_path,
+        )
 
     def on_trv_left_double_clicked(self):
         index = self.trv_left.selectedIndexes()[0]
@@ -137,7 +147,7 @@ class MwChromHelper(QMainWindow):
             chrom_ins.fetch_bookmarks_from_all_profiles()
             self.chrom_ins_map[name] = chrom_ins
 
-        self.update_all_data(self.chrom_ins_map[name])
+        self.update_all_data(self.chrom_ins_map[name], exec_path)
 
     def sizeHint(self):
         return QSize(860, 640)
