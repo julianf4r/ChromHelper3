@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="/">
+    <file>assets/icons/bookmark_32.png</file>
+    <file>assets/icons/extension_32.png</file>
+    <file>assets/icons/profile_32.png</file>
+    <file>assets/icons/brave_32.png</file>
+    <file>assets/icons/chrome_32.png</file>
+    <file>assets/icons/edge_32.png</file>
+  </qresource>
+</RCC>

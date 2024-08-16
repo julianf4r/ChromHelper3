@@ -1,0 +1,2 @@
+jnp3[gui]@https://github.com/JulianFreeman/jnp3/releases/download/v0.2.0/jnp3-0.2.0-py3-none-any.whl
+chromy@https://github.com/JulianFreeman/chromy/releases/download/v0.1.0/chromy-0.1.0-py3-none-any.whl
