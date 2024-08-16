@@ -54,12 +54,25 @@ class ProfilesModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
 
+    def update_data(self, profiles: dict[str, Profile]):
+        self.beginResetModel()
+
+        self.profiles = profiles
+        self.profile_ids = list(profiles.keys())
+        self.profile_ids.sort(key=sort_profiles_id_func)
+
+        self.endResetModel()
+
 
 class TabProfiles(QWidget):
 
-    def __init__(self, profiles: dict[str, Profile], parent=None):
+    def __init__(
+            self,
+            profiles: dict[str, Profile] = None,
+            parent: QWidget = None
+    ):
         super().__init__(parent)
-        self.profiles = profiles
+        self.profiles = profiles or {}
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
 
@@ -69,9 +82,14 @@ class TabProfiles(QWidget):
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.vly_m.addWidget(self.trv_m)
 
-        model = ProfilesModel(self.profiles, self)
+        self.profiles_model = ProfilesModel(self.profiles, self)
 
         proxy_model = ProfileSortFilterProxyModel(self)
-        proxy_model.setSourceModel(model)
+        proxy_model.setSourceModel(self.profiles_model)
 
         self.trv_m.setModel(proxy_model)
+
+    def update_model(self, profiles: dict[str, Profile]):
+        self.profiles = profiles
+        self.profiles_model.update_data(profiles)
+

@@ -10,8 +10,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeView
 )
 
-from chromy.structs import Extension
-from chromy.chromi import ChromInstance
+from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
 from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
 
@@ -54,14 +53,28 @@ class ExtensionsModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
 
+    def update_data(self, extensions: dict[str, Extension]):
+        self.beginResetModel()
+
+        self.extensions = extensions
+        self.extension_ids = list(self.extensions.keys())
+
+        self.endResetModel()
+
 
 class TabExtensions(QWidget):
 
-    def __init__(self, chrom_ins: ChromInstance, parent=None):
+    def __init__(
+            self,
+            extensions: dict[str, Extension] = None,
+            profiles: dict[str, Profile] = None,
+            userdata_dir: str = "",
+            parent=None
+    ):
         super().__init__(parent)
-        self.chrom_ins = chrom_ins
-        self.extensions = self.chrom_ins.extensions
-        self.profiles = self.chrom_ins.profiles
+        self.extensions = extensions or {}
+        self.profiles = profiles or {}
+        self.userdata_dir = userdata_dir
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -72,9 +85,9 @@ class TabExtensions(QWidget):
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.vly_m.addWidget(self.trv_m)
 
-        model = ExtensionsModel(self.extensions, self)
+        self.extensions_model = ExtensionsModel(self.extensions, self)
         proxy_model = QSortFilterProxyModel(self)
-        proxy_model.setSourceModel(model)
+        proxy_model.setSourceModel(self.extensions_model)
 
         self.trv_m.setModel(proxy_model)
 
@@ -96,9 +109,14 @@ class TabExtensions(QWidget):
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(model)
 
-        ds = DaShowProfiles(self.chrom_ins.userdata_dir, self)
+        ds = DaShowProfiles(self.userdata_dir, self)
         ds.setWindowTitle(ext.name)
         ds.setWindowIcon(QIcon(ext.icon))
         ds.lne_mark.setText(ext.id)
         ds.trv_p.setModel(proxy_model)
         ds.exec()
+
+    def update_model(self, extensions: dict[str, Extension], profiles: dict[str, Profile]):
+        self.profiles = profiles
+        self.extensions = extensions
+        self.extensions_model.update_data(extensions)

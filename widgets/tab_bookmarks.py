@@ -10,8 +10,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QTreeView
 )
 
-from chromy.structs import Bookmark
-from chromy.chromi import ChromInstance
+from chromy import Bookmark, Profile
 from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
 
@@ -52,14 +51,28 @@ class BookmarksModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
 
+    def update_data(self, bookmarks: dict[str, Bookmark]):
+        self.beginResetModel()
+
+        self.bookmarks = bookmarks
+        self.bookmark_urls = list(self.bookmarks.keys())
+
+        self.endResetModel()
+
 
 class TabBookmarks(QWidget):
 
-    def __init__(self, chrom_ins: ChromInstance, parent=None):
+    def __init__(
+            self,
+            bookmarks: dict[str, Bookmark] = None,
+            profiles: dict[str, Profile] = None,
+            userdata_dir: str = "",
+            parent=None
+    ):
         super().__init__(parent)
-        self.chrom_ins = chrom_ins
-        self.bookmarks = self.chrom_ins.bookmarks
-        self.profiles = self.chrom_ins.profiles
+        self.bookmarks = bookmarks or {}
+        self.profiles = profiles or {}
+        self.userdata_dir = userdata_dir
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -70,9 +83,9 @@ class TabBookmarks(QWidget):
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.vly_m.addWidget(self.trv_m)
 
-        model = BookmarksModel(self.bookmarks, self)
+        self.bookmarks_model = BookmarksModel(self.bookmarks, self)
         proxy_model = QSortFilterProxyModel(self)
-        proxy_model.setSourceModel(model)
+        proxy_model.setSourceModel(self.bookmarks_model)
 
         self.trv_m.setModel(proxy_model)
 
@@ -94,8 +107,13 @@ class TabBookmarks(QWidget):
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(model)
 
-        ds = DaShowProfiles(self.chrom_ins.userdata_dir, self)
+        ds = DaShowProfiles(self.userdata_dir, self)
         ds.setWindowTitle(bmk.name)
         ds.lne_mark.setText(bmk.url)
         ds.trv_p.setModel(proxy_model)
         ds.exec()
+
+    def update_model(self, bookmarks: dict[str, Bookmark], profiles: dict[str, Profile]):
+        self.bookmarks = bookmarks
+        self.profiles = profiles
+        self.bookmarks_model.update_data(bookmarks)

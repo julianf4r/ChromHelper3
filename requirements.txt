@@ -1,2 +1,3 @@
-jnp3[gui]@https://github.com/JulianFreeman/jnp3/releases/download/v0.2.0/jnp3-0.2.0-py3-none-any.whl
-chromy@https://github.com/JulianFreeman/chromy/releases/download/v0.1.0/chromy-0.1.0-py3-none-any.whl
+jnp3[gui]@https://github.com/JulianFreeman/jnp3/releases/download/v0.3.1/jnp3-0.3.1-py3-none-any.whl
+chromy@https://github.com/JulianFreeman/chromy/releases/download/v0.1.1/chromy-0.1.1-py3-none-any.whl
+Sqlite3Helper@https://github.com/JulianFreeman/Sqlite3Helper/releases/download/v2.2.6/Sqlite3Helper-2.2.6-py3-none-any.whl

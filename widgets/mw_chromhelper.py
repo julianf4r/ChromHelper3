@@ -17,17 +17,20 @@ from chromy.chromi import ChromInstance
 from .tab_profiles import TabProfiles
 from .tab_extensions import TabExtensions
 from .tab_bookmarks import TabBookmarks
+from .tab_config import TabConfig
+from core.db_operations import DBManger
+from core.utils import get_icon_path
 
 
 class UserDataListModel(QAbstractTableModel):
 
-    def __init__(self, parent=None):
+    def __init__(
+            self,
+            userdata_info: list[list[str]],  # [[name, type, exec, data]]
+            parent: QWidget = None,
+    ):
         super().__init__(parent)
-        self.userdata_info = [
-            [QIcon(":/assets/icons/chrome_32.png"), "Chrome", r"C:\Users\Julian\AppData\Local\Google\Chrome\User Data"],
-            [QIcon(":/assets/icons/edge_32.png"), "Edge", r"C:\Users\Julian\AppData\Local\Microsoft\Edge\User Data"],
-            [QIcon(":/assets/icons/brave_32.png"), "Brave", r"C:\Users\Julian\AppData\Local\BraveSoftware\Brave-Browser\User Data"],
-        ]
+        self.userdata_info = userdata_info
 
     def rowCount(self, parent: QModelIndex = ...):
         return len(self.userdata_info)
@@ -38,9 +41,11 @@ class UserDataListModel(QAbstractTableModel):
     def data(self, index: QModelIndex, role: int = ...):
         row = index.row()
         if role == Qt.ItemDataRole.DisplayRole:
-            return self.userdata_info[row][1]
-        if role == Qt.ItemDataRole.DecorationRole:
             return self.userdata_info[row][0]
+        if role == Qt.ItemDataRole.DecorationRole:
+            return QIcon(get_icon_path(self.userdata_info[row][1]))
+        if role == Qt.ItemDataRole.UserRole:
+            return self.userdata_info[row][2], self.userdata_info[row][3]
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):
         if orientation == Qt.Orientation.Horizontal:
@@ -49,17 +54,20 @@ class UserDataListModel(QAbstractTableModel):
             if role == Qt.ItemDataRole.TextAlignmentRole:
                 return Qt.AlignmentFlag.AlignCenter
 
+    def update_model(self, userdata_info: list[list[str]]):
+        self.beginResetModel()
+        self.userdata_info = userdata_info
+        self.endResetModel()
+
 
 class MwChromHelper(QMainWindow):
 
-    def __init__(self, parent=None):
+    def __init__(self, app_dir: str, parent=None):
         super().__init__(parent)
 
-        chrome = ChromInstance(r"C:\Users\Julian\AppData\Local\Google\Chrome\User Data")
-        # chrome = ChromInstance(r"F:\Chrome\RecycleAccounts\User Data")
-        chrome.fetch_all_profiles()
-        chrome.fetch_extensions_from_all_profiles()
-        chrome.fetch_bookmarks_from_all_profiles()
+        self.dbm = DBManger(app_dir)
+
+        self.chrom_ins_map: dict[str, ChromInstance] = {}
 
         # =================== UI =========================
         self.cw = QWidget(self)
@@ -96,17 +104,40 @@ class MwChromHelper(QMainWindow):
         self.hly_main.setStretchFactor(self.trv_left, 1)
         self.hly_main.setStretchFactor(self.tw_right, 5)
 
-        self.tab_profiles = TabProfiles(chrome.profiles, self)
-        self.tab_extensions = TabExtensions(chrome, self)
-        self.tab_bookmarks = TabBookmarks(chrome, self)
-        self.tw_right.addTab(self.tab_profiles, QIcon(":/assets/icons/profile_32.png"), "用户页")
-        self.tw_right.addTab(self.tab_extensions, QIcon(":/assets/icons/extension_32.png"), "插件页")
-        self.tw_right.addTab(self.tab_bookmarks, QIcon(":/assets/icons/bookmark_32.png"), "书签页")
+        self.tab_profiles = TabProfiles(parent=self)
+        self.tab_extensions = TabExtensions(parent=self)
+        self.tab_bookmarks = TabBookmarks(parent=self)
+        self.tab_config = TabConfig(self)
+        self.tw_right.addTab(self.tab_profiles, QIcon(get_icon_path("profile")), "用户页")
+        self.tw_right.addTab(self.tab_extensions, QIcon(get_icon_path("extension")), "插件页")
+        self.tw_right.addTab(self.tab_bookmarks, QIcon(get_icon_path("bookmark")), "书签页")
+        self.tw_right.addTab(self.tab_config, "配置页")
 
         # ================== END UI =====================
 
-        model = UserDataListModel(self)
-        self.trv_left.setModel(model)
+        userdata_info = self.dbm.select_all()
+        self.userdata_model = UserDataListModel(userdata_info, self)
+        self.trv_left.setModel(self.userdata_model)
+
+        self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
+
+    def update_all_data(self, chrom_ins: ChromInstance):
+        self.tab_profiles.update_model(chrom_ins.profiles)
+        self.tab_extensions.update_model(chrom_ins.extensions, chrom_ins.profiles)
+        self.tab_bookmarks.update_model(chrom_ins.bookmarks, chrom_ins.profiles)
+
+    def on_trv_left_double_clicked(self):
+        index = self.trv_left.selectedIndexes()[0]
+        name = index.data(Qt.ItemDataRole.DisplayRole)
+        exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
+        if name not in self.chrom_ins_map:
+            chrom_ins = ChromInstance(data_path)
+            chrom_ins.fetch_all_profiles()
+            chrom_ins.fetch_extensions_from_all_profiles()
+            chrom_ins.fetch_bookmarks_from_all_profiles()
+            self.chrom_ins_map[name] = chrom_ins
+
+        self.update_all_data(self.chrom_ins_map[name])
 
     def sizeHint(self):
         return QSize(860, 640)
