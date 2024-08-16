@@ -1,7 +1,8 @@
 # coding: utf8
+from pathlib import Path
 from PySide6.QtCore import (
     QSize, Qt, QAbstractListModel,
-    QModelIndex,
+    QModelIndex, Signal,
 )
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
@@ -11,7 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from jnp3.gui import CardsArea, Card, accept_warning
-from chromy import get_browser_exec_path
+from chromy import get_browser_exec_path, get_browser_data_path
 
 from core.utils import get_icon_path, SUPPORTED_BROWSERS
 from core.db_operations import DBManger
@@ -116,14 +117,26 @@ class DaUserDataEdit(QDialog):
         # 因为默认的位置可以在初始化时自动填充，如果默认的没了，就重置数据库吧
 
     def on_tbn_exec_clicked(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", "../")
+        browser = self.cmbx_icons.currentData(Qt.ItemDataRole.DisplayRole)
+        exec_path = get_browser_exec_path(browser)
+        if exec_path is None:
+            p = "../"
+        else:
+            p = str(Path(exec_path).parent)
+        filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", p)
         if len(filename) == 0:
             return
 
         self.lne_exec.setText(filename)
 
     def on_tbn_data_clicked(self):
-        dirname = QFileDialog.getExistingDirectory(self, "打开用户数据目录", "../")
+        browser = self.cmbx_icons.currentData(Qt.ItemDataRole.DisplayRole)
+        data_path = get_browser_data_path(browser)
+        if data_path is None:
+            d = "../"
+        else:
+            d = str(Path(data_path).parent)
+        dirname = QFileDialog.getExistingDirectory(self, "打开用户数据目录", d)
         if len(dirname) == 0:
             return
 
@@ -186,6 +199,8 @@ class WgUserDataDisplay(QWidget):
 
 class TabConfig(QWidget):
 
+    userdata_changed = Signal()
+
     def __init__(
             self,
             dbm: DBManger,
@@ -203,11 +218,14 @@ class TabConfig(QWidget):
         self.pbn_add = QPushButton("添加", self)
         self.hly_top.addWidget(self.pbn_add)
         self.hly_top.addStretch(1)
+        self.pbn_reset = QPushButton("重置", self)
+        self.hly_top.addWidget(self.pbn_reset)
 
         self.ca_m = CardsArea(self)
         self.vly_m.addWidget(self.ca_m)
 
         self.pbn_add.clicked.connect(self.on_pbn_add_clicked)
+        self.pbn_reset.clicked.connect(self.on_pbn_reset_clicked)
         self.ca_m.card_removed.connect(self.on_card_removed)
 
         # 这个要在最后，第一次填充也相当于重置
@@ -235,14 +253,21 @@ class TabConfig(QWidget):
             )
 
             self.dbm.insert_one(name, type_, exec_path, data_path)
+            self.userdata_changed.emit()
+
+    def on_pbn_reset_clicked(self):
+        # 下面的函数会触发信号，所以这里就不触发了
+        self.reset_cards()
 
     def on_card_removed(self, card: Card):
         self.dbm.delete_one(card.title)
+        self.userdata_changed.emit()
 
     def reset_cards(self, is_init: bool = False):
         # 清空卡片
         while len(self.ca_m.cards) > 0:
             card = self.ca_m.cards[-1]
+            # 这里可能每移除一次就会触发一次信号，但是因为总量不会大，就这样吧
             self.ca_m.remove_card(card)
 
         # 如果是打开软件，就不重置，因为还会想保留上次的路径
@@ -262,4 +287,4 @@ class TabConfig(QWidget):
                 icon=QIcon(get_icon_path(userdata[1])),
             )
 
-
+        self.userdata_changed.emit()

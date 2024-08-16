@@ -111,9 +111,10 @@ class MwChromHelper(QMainWindow):
         self.tw_right.addTab(self.tab_profiles, QIcon(get_icon_path("profile")), "用户页")
         self.tw_right.addTab(self.tab_extensions, QIcon(get_icon_path("extension")), "插件页")
         self.tw_right.addTab(self.tab_bookmarks, QIcon(get_icon_path("bookmark")), "书签页")
-        self.tw_right.addTab(self.tab_config, "配置页")
+        self.tw_right.addTab(self.tab_config, QIcon(get_icon_path("config")), "配置页")
 
         self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
+        self.tab_config.userdata_changed.connect(self.on_tab_config_userdata_changed)
 
         # ================== END UI =====================
 
@@ -148,6 +149,9 @@ class MwChromHelper(QMainWindow):
             self.chrom_ins_map[name] = chrom_ins
 
         self.update_all_data(self.chrom_ins_map[name], exec_path)
+
+    def on_tab_config_userdata_changed(self):
+        self.userdata_model.update_model(self.dbm.select_all())
 
     def sizeHint(self):
         return QSize(860, 640)

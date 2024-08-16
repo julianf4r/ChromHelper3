@@ -1,7 +1,9 @@
 # coding: utf8
+import time
+import subprocess
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
-    QModelIndex, Qt, QProcess,
+    QModelIndex, Qt,
 )
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit,
@@ -40,7 +42,6 @@ class DaShowProfiles(QDialog):
         super().__init__(parent)
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
-        self.process = QProcess(self)
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -82,5 +83,5 @@ class DaShowProfiles(QDialog):
 
         cmd = rf'"{self.exec_path}" --user-data-dir="{self.userdata_dir}" --profile-directory="{{0}}"'
         for profile_id in profile_ids:
-            self.process.startCommand(cmd.format(profile_id))
-            self.process.waitForFinished(10000)
+            subprocess.Popen(cmd.format(profile_id), shell=True)
+            time.sleep(0.5)

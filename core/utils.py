@@ -15,6 +15,7 @@ icons_map = {
     "profile": ":/assets/icons/profile_32.png",
     "extension": ":/assets/icons/extension_32.png",
     "bookmark": ":/assets/icons/bookmark_32.png",
+    "config": ":/assets/icons/config_32.png",
     "none": ":/assets/icons/none_128.png",
 }
 

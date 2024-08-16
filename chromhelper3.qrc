@@ -1,6 +1,7 @@
 <RCC>
   <qresource prefix="/">
     <file>assets/icons/chromium_32.png</file>
+    <file>assets/icons/config_32.png</file>
     <file>assets/icons/vivaldi_32.png</file>
     <file>assets/icons/yandex_32.png</file>
     <file>assets/icons/none_128.png</file>
