@@ -28,6 +28,7 @@ def main():
     app.setApplicationName(APP_NAME)
 
     win = MwChromHelper(get_app_dir())
+    win.setWindowTitle(f"{APP_NAME} v{__version__}")
     win.show()
     return app.exec()
 

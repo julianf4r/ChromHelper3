@@ -1,4 +1,6 @@
 # coding: utf8
+import sys
+
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
     QModelIndex, Qt,
@@ -18,6 +20,8 @@ from .tab_profiles import TabProfiles
 from .tab_extensions import TabExtensions
 from .tab_bookmarks import TabBookmarks
 from .tab_config import TabConfig
+from .da_debug_info import DaDebugInfo, EmittingStream
+
 from core.db_operations import DBManger
 from core.utils import get_icon_path
 
@@ -73,35 +77,29 @@ class MwChromHelper(QMainWindow):
         self.cw = QWidget(self)
         self.setCentralWidget(self.cw)
 
-        self.vly_cw = QVBoxLayout()
-        self.cw.setLayout(self.vly_cw)
+        self.hly_main = QHBoxLayout()
+        self.cw.setLayout(self.hly_main)
 
-        self.hly_top = QHBoxLayout()
-        self.vly_cw.addLayout(self.hly_top)
+        self.vly_left = QVBoxLayout()
+        self.hly_main.addLayout(self.vly_left)
 
         self.cmbx_styles = StyleComboBox(self)
         self.cmbx_styles.setMinimumWidth(100)
-
-        self.pbn_settings = QPushButton("设置", self)
-        self.pbn_about = QPushButton("关于", self)
-
-        self.hly_top.addWidget(self.cmbx_styles)
-        self.hly_top.addStretch(1)
-        self.hly_top.addWidget(self.pbn_settings)
-        self.hly_top.addWidget(self.pbn_about)
-
-        self.hly_main = QHBoxLayout()
-        self.vly_cw.addLayout(self.hly_main)
+        self.vly_left.addWidget(self.cmbx_styles)
 
         self.trv_left = QTreeView(self)
         self.trv_left.setMinimumWidth(100)
         self.trv_left.setIndentation(0)
+        self.vly_left.addWidget(self.trv_left)
+
+        self.pbn_debug = QPushButton("打开输出窗口", self)
+        self.vly_left.addWidget(self.pbn_debug)
 
         self.tw_right = QTabWidget(self)
 
-        self.hly_main.addWidget(self.trv_left)
+        # self.hly_main.addWidget(self.trv_left)
         self.hly_main.addWidget(self.tw_right)
-        self.hly_main.setStretchFactor(self.trv_left, 1)
+        self.hly_main.setStretchFactor(self.vly_left, 1)
         self.hly_main.setStretchFactor(self.tw_right, 5)
 
         self.tab_profiles = TabProfiles(parent=self)
@@ -115,12 +113,16 @@ class MwChromHelper(QMainWindow):
 
         self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
         self.tab_config.userdata_changed.connect(self.on_tab_config_userdata_changed)
+        self.pbn_debug.clicked.connect(self.on_pbn_debug_clicked)
 
         # ================== END UI =====================
 
         userdata_info = self.dbm.select_all()
         self.userdata_model = UserDataListModel(userdata_info, self)
         self.trv_left.setModel(self.userdata_model)
+
+        sys.stdout = EmittingStream()
+        sys.stderr = EmittingStream()
 
     def update_all_data(self, chrom_ins: ChromInstance, exec_path: str):
         self.tab_profiles.update_model(chrom_ins.profiles)
@@ -152,6 +154,12 @@ class MwChromHelper(QMainWindow):
 
     def on_tab_config_userdata_changed(self):
         self.userdata_model.update_model(self.dbm.select_all())
+
+    def on_pbn_debug_clicked(self):
+        dd = DaDebugInfo(self)
+        dd.redirect_output()
+        dd.setWindowModality(Qt.WindowModality.NonModal)
+        dd.show()
 
     def sizeHint(self):
         return QSize(860, 640)

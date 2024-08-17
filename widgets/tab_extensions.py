@@ -92,6 +92,7 @@ class TabExtensions(QWidget):
         self.trv_m.setIndentation(0)
         self.trv_m.setSortingEnabled(True)
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+
         self.vly_m.addWidget(self.trv_m)
 
         self.extensions_model = ExtensionsModel(self.extensions, self)
@@ -137,3 +138,5 @@ class TabExtensions(QWidget):
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
         self.extensions_model.update_data(extensions)
+
+        self.trv_m.setColumnWidth(0, 200)

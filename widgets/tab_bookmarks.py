@@ -127,3 +127,5 @@ class TabBookmarks(QWidget):
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
         self.bookmarks_model.update_data(bookmarks)
+
+        self.trv_m.setColumnWidth(0, 300)

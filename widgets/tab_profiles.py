@@ -93,3 +93,4 @@ class TabProfiles(QWidget):
         self.profiles = profiles
         self.profiles_model.update_data(profiles)
 
+        self.trv_m.setColumnWidth(1, 200)
