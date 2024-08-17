@@ -1,4 +1,6 @@
 # coding: utf8
+from typing import Callable
+
 from PySide6.QtCore import (
     QAbstractTableModel,
     QModelIndex, Qt, QSortFilterProxyModel
@@ -77,6 +79,7 @@ class TabExtensions(QWidget):
             profiles: dict[str, Profile] = None,
             userdata_dir: str = "",
             exec_path: str = "",
+            delete_func: Callable[[list[str], list[str]], None] = None,
             parent=None
     ):
         super().__init__(parent)
@@ -84,6 +87,7 @@ class TabExtensions(QWidget):
         self.profiles = profiles or {}
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
+        self.delete_func = delete_func
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -119,12 +123,17 @@ class TabExtensions(QWidget):
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(model)
 
-        ds = DaShowProfiles(self.userdata_dir, self.exec_path, self)
+        ds = DaShowProfiles(self.userdata_dir, self.exec_path, self.delete_func, self)
         ds.setWindowTitle(ext.name)
         ds.setWindowIcon(QIcon(ext.icon))
         ds.lne_mark.setText(ext.id)
         ds.trv_p.setModel(proxy_model)
+
+        ds.deletion_finished.connect(self.update_after_deletion)
         ds.exec()
+
+    def update_after_deletion(self):
+        self.extensions_model.update_data(self.extensions)
 
     def update_model(
             self,
@@ -132,11 +141,13 @@ class TabExtensions(QWidget):
             profiles: dict[str, Profile],
             userdata_dir: str,
             exec_path: str,
+            delete_func: Callable[[list[str], list[str]], None]
     ):
         self.profiles = profiles
         self.extensions = extensions
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
+        self.delete_func = delete_func
         self.extensions_model.update_data(extensions)
 
         self.trv_m.setColumnWidth(0, 200)

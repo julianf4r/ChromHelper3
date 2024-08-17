@@ -102,6 +102,7 @@ class MwChromHelper(QMainWindow):
         self.hly_main.setStretchFactor(self.vly_left, 1)
         self.hly_main.setStretchFactor(self.tw_right, 5)
 
+        # 一开始都是啥数据都没有，需要等第一次双击左侧才会加载数据
         self.tab_profiles = TabProfiles(parent=self)
         self.tab_extensions = TabExtensions(parent=self)
         self.tab_bookmarks = TabBookmarks(parent=self)
@@ -135,12 +136,14 @@ class MwChromHelper(QMainWindow):
             chrom_ins.profiles,
             chrom_ins.userdata_dir,
             exec_path,
+            chrom_ins.delete_extensions,
         )
         self.tab_bookmarks.update_model(
             chrom_ins.bookmarks,
             chrom_ins.profiles,
             chrom_ins.userdata_dir,
             exec_path,
+            chrom_ins.delete_bookmarks,
         )
 
     def on_trv_left_double_clicked(self):

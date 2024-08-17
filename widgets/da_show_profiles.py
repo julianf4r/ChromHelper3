@@ -1,13 +1,18 @@
 # coding: utf8
+from datetime import datetime
+from typing import Callable
+
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
-    QModelIndex, Qt,
+    QModelIndex, Qt, Signal,
 )
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit,
     QTreeView, QHBoxLayout, QPushButton,
-    QAbstractItemView
+    QAbstractItemView, QWidget, QMessageBox,
 )
+
+from jnp3.gui import accept_warning
 
 from core.utils import open_profiles
 
@@ -38,10 +43,19 @@ class ShowProfilesModel(QAbstractTableModel):
 
 class DaShowProfiles(QDialog):
 
-    def __init__(self, userdata_dir: str, exec_path: str, parent=None):
+    deletion_finished = Signal()
+
+    def __init__(
+            self,
+            userdata_dir: str,
+            exec_path: str,
+            delete_func: Callable[[list[str], list[str]], None],
+            parent: QWidget = None
+    ):
         super().__init__(parent)
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
+        self.delete_func = delete_func
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -57,6 +71,10 @@ class DaShowProfiles(QDialog):
         self.trv_p.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.vly_m.addWidget(self.trv_p)
 
+        self.lne_info = QLineEdit(self)
+        self.lne_info.setReadOnly(True)
+        self.vly_m.addWidget(self.lne_info)
+
         self.hly_bot = QHBoxLayout()
         self.vly_m.addLayout(self.hly_bot)
 
@@ -70,6 +88,7 @@ class DaShowProfiles(QDialog):
 
         self.pbn_cancel.clicked.connect(self.on_pbn_cancel_clicked)
         self.pbn_open.clicked.connect(self.on_pbn_open_clicked)
+        self.pbn_delete.clicked.connect(self.on_pbn_delete_clicked)
 
     def sizeHint(self):
         return QSize(400, 360)
@@ -79,3 +98,21 @@ class DaShowProfiles(QDialog):
 
     def on_pbn_open_clicked(self):
         open_profiles(self, self.trv_p.selectedIndexes(), self.exec_path, self.userdata_dir)
+
+    def on_pbn_delete_clicked(self):
+        profile_ids_to_delete = [index.data(Qt.ItemDataRole.DisplayRole)
+                                 for index in self.trv_p.selectedIndexes()
+                                 if index.column() == 0]
+        if len(profile_ids_to_delete) == 0:
+            QMessageBox.warning(self, "警告", "你没有选中任何用户。")
+            return
+        if accept_warning(self, True, "警告", f"你确定删除这 {len(profile_ids_to_delete)} 个吗？"):
+            return
+
+        t = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.lne_info.setText(f"[{t}] 正在删除……")
+        self.delete_func([self.lne_mark.text()], profile_ids_to_delete)
+
+        QMessageBox.information(self, "提示", f"[{t}] 删除完毕，可以打开输出窗口查看详情。")
+        self.deletion_finished.emit()
+        self.accept()
