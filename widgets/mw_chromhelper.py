@@ -125,7 +125,11 @@ class MwChromHelper(QMainWindow):
         sys.stderr = EmittingStream()
 
     def update_all_data(self, chrom_ins: ChromInstance, exec_path: str):
-        self.tab_profiles.update_model(chrom_ins.profiles)
+        self.tab_profiles.update_model(
+            chrom_ins.profiles,
+            chrom_ins.userdata_dir,
+            exec_path,
+        )
         self.tab_extensions.update_model(
             chrom_ins.extensions,
             chrom_ins.profiles,

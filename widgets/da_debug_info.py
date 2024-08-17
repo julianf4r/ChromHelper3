@@ -13,15 +13,17 @@ output_cache = []
 
 # 自定义类，用于将标准输出重定向到缓存和 QTextEdit
 class EmittingStream:
-    def __init__(self, text_edit=None):
-        self.text_edit = text_edit
+    def __init__(self, txe_info: QTextEdit = None):
+        self.txe_info = txe_info
 
     def write(self, text: str):
         global output_cache
-        text = text.strip()
+
         output_cache.append(text)  # 将输出内容存储到缓存中
-        if self.text_edit:  # 如果 QTextEdit 存在，则将内容追加到其中
-            self.text_edit.append(text)
+        if self.txe_info:  # 如果 QTextEdit 存在，则将内容追加到其中
+            # 防止插入多余的换行符
+            self.txe_info.moveCursor(self.txe_info.textCursor().MoveOperation.End)
+            self.txe_info.insertPlainText(text)
 
     def flush(self):
         pass  # 对于文本控件，不需要实现 flush
@@ -35,13 +37,13 @@ class DaDebugInfo(QDialog):
         self.setWindowTitle("输出窗口")
 
         # 创建 QTextEdit 控件用于显示输出
-        self.text_edit = QTextEdit(self)
-        self.text_edit.setReadOnly(True)
+        self.txe_info = QTextEdit(self)
+        self.txe_info.setReadOnly(True)
 
         # 布局
         layout = QVBoxLayout()
         self.setLayout(layout)
-        layout.addWidget(self.text_edit)
+        layout.addWidget(self.txe_info)
 
         # 将缓存中的内容添加到 QTextEdit 中
         self.load_previous_output()
@@ -52,9 +54,11 @@ class DaDebugInfo(QDialog):
     def load_previous_output(self):
         """将之前缓存的输出加载到 QTextEdit 中"""
         for text in output_cache:
-            self.text_edit.append(text)
+            # 防止插入多余的换行符
+            self.txe_info.moveCursor(self.txe_info.textCursor().MoveOperation.End)
+            self.txe_info.insertPlainText(text)
 
     # 将输出重定向到窗口的 QTextEdit 控件
     def redirect_output(self):
-        sys.stdout = EmittingStream(self.text_edit)
-        sys.stderr = EmittingStream(self.text_edit)
+        sys.stdout = EmittingStream(self.txe_info)
+        sys.stderr = EmittingStream(self.txe_info)

@@ -1,19 +1,22 @@
 # coding: utf8
 from PySide6.QtCore import (
-    QAbstractTableModel, QModelIndex, Qt,
-    QSortFilterProxyModel,
+    QAbstractTableModel, QModelIndex, Qt, QPoint,
 )
 from PySide6.QtGui import (
-    QFont,
+    QFont, QAction,
 )
 from PySide6.QtWidgets import (
     QWidget, QTreeView,
-    QVBoxLayout,
+    QVBoxLayout, QMenu,
 )
 
 from chromy.structs import Profile
 
-from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
+from core.utils import (
+    sort_profiles_id_func,
+    ProfileSortFilterProxyModel,
+    open_profiles,
+)
 
 
 class ProfilesModel(QAbstractTableModel):
@@ -69,10 +72,19 @@ class TabProfiles(QWidget):
     def __init__(
             self,
             profiles: dict[str, Profile] = None,
+            userdata_dir: str = "",
+            exec_path: str = "",
             parent: QWidget = None
     ):
         super().__init__(parent)
         self.profiles = profiles or {}
+        self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
+
+        self.menu_ctx = QMenu(self)
+        self.act_open = QAction("打开", self)
+        self.menu_ctx.addAction(self.act_open)
+
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
 
@@ -89,8 +101,26 @@ class TabProfiles(QWidget):
 
         self.trv_m.setModel(proxy_model)
 
-    def update_model(self, profiles: dict[str, Profile]):
+        self.trv_m.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
+        self.trv_m.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.act_open.triggered.connect(self.on_act_open_triggered)
+        self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
+
+    def on_act_open_triggered(self):
+        open_profiles(self, self.trv_m.selectedIndexes(), self.exec_path, self.userdata_dir)
+
+    def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
+        self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
+
+    def update_model(
+            self,
+            profiles: dict[str, Profile],
+            userdata_dir: str,
+            exec_path: str,
+    ):
         self.profiles = profiles
+        self.userdata_dir = userdata_dir
+        self.exec_path = exec_path
         self.profiles_model.update_data(profiles)
 
         self.trv_m.setColumnWidth(1, 200)

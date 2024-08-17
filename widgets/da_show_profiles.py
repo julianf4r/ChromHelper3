@@ -1,6 +1,4 @@
 # coding: utf8
-import time
-import subprocess
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
     QModelIndex, Qt,
@@ -8,8 +6,10 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit,
     QTreeView, QHBoxLayout, QPushButton,
-    QAbstractItemView,
+    QAbstractItemView
 )
+
+from core.utils import open_profiles
 
 
 class ShowProfilesModel(QAbstractTableModel):
@@ -78,10 +78,4 @@ class DaShowProfiles(QDialog):
         self.reject()
 
     def on_pbn_open_clicked(self):
-        indexes = self.trv_p.selectedIndexes()
-        profile_ids = [index.data(Qt.ItemDataRole.DisplayRole) for index in indexes if index.column() == 0]
-
-        cmd = rf'"{self.exec_path}" --user-data-dir="{self.userdata_dir}" --profile-directory="{{0}}"'
-        for profile_id in profile_ids:
-            subprocess.Popen(cmd.format(profile_id), shell=True)
-            time.sleep(0.5)
+        open_profiles(self, self.trv_p.selectedIndexes(), self.exec_path, self.userdata_dir)

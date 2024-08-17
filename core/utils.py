@@ -1,7 +1,14 @@
 # coding: utf8
+import sys
+import time
+import subprocess
 from PySide6.QtCore import (
     QModelIndex, QSortFilterProxyModel, Qt,
 )
+from PySide6.QtWidgets import QWidget, QMessageBox
+
+from jnp3.path import path_not_exist
+
 
 SUPPORTED_BROWSERS = ["chrome", "edge", "brave", "vivaldi", "yandex", "chromium"]
 
@@ -38,6 +45,24 @@ def sort_profiles_id_func(profile_id: str) -> int:
         except ValueError:
             # if the id is weird
             return 999
+
+
+def open_profiles(
+        widget: QWidget,
+        indexes: list[QModelIndex],
+        exec_path: str,
+        userdata_dir: str,
+):
+    if path_not_exist(exec_path):
+        QMessageBox.critical(widget, "错误", "没有找到执行文件路径，请检查配置页。")
+        return
+
+    profile_ids = [index.data(Qt.ItemDataRole.DisplayRole) for index in indexes if index.column() == 0]
+
+    cmd = rf'"{exec_path}" --user-data-dir="{userdata_dir}" --profile-directory="{{0}}"'
+    for profile_id in profile_ids:
+        subprocess.Popen(cmd.format(profile_id), shell=True)
+        time.sleep(0.5)
 
 
 class ProfileSortFilterProxyModel(QSortFilterProxyModel):
