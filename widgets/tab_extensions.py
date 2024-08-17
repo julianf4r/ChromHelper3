@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from jnp3.gui import accept_warning
+from jnp3.path import path_not_exist
 from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
 from core.utils import (
@@ -48,7 +49,7 @@ class ExtensionsModel(QAbstractTableModel):
                 return ext.description
         elif role == Qt.ItemDataRole.DecorationRole:
             if col == 0:
-                if len(ext.icon) == 0:
+                if path_not_exist(ext.icon):
                     return QIcon(get_icon_path("none"))
                 else:
                     return QIcon(ext.icon)

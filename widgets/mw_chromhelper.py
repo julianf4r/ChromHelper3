@@ -5,15 +5,15 @@ from PySide6.QtCore import (
     QSize, QAbstractTableModel,
     QModelIndex, Qt,
 )
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import (
     QMainWindow, QWidget,
     QHBoxLayout, QVBoxLayout,
     QTabWidget, QPushButton,
-    QTreeView,
+    QTreeView, QMessageBox,
 )
 
-from jnp3.gui import StyleComboBox
+from jnp3.gui import StyleComboBox, HorizontalLine
 from chromy.chromi import ChromInstance
 
 from .tab_profiles import TabProfiles
@@ -36,6 +36,8 @@ class UserDataListModel(QAbstractTableModel):
         super().__init__(parent)
         self.userdata_info = userdata_info
 
+        self.active_name: str | None = None
+
     def rowCount(self, parent: QModelIndex = ...):
         return len(self.userdata_info)
 
@@ -50,6 +52,11 @@ class UserDataListModel(QAbstractTableModel):
             return QIcon(get_icon_path(self.userdata_info[row][1]))
         if role == Qt.ItemDataRole.UserRole:
             return self.userdata_info[row][2], self.userdata_info[row][3]
+        if role == Qt.ItemDataRole.FontRole:
+            if self.userdata_info[row][0] == self.active_name:
+                font = QFont()
+                font.setBold(True)
+                return font
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):
         if orientation == Qt.Orientation.Horizontal:
@@ -63,6 +70,14 @@ class UserDataListModel(QAbstractTableModel):
         self.userdata_info = userdata_info
         self.endResetModel()
 
+    def clear_active(self):
+        self.active_name = None
+
+    def set_active(self, index: QModelIndex):
+        if index.isValid():
+            self.active_name = index.data(Qt.ItemDataRole.DisplayRole)
+            self.dataChanged.emit(index, index, [Qt.ItemDataRole.FontRole])
+
 
 class MwChromHelper(QMainWindow):
 
@@ -72,6 +87,7 @@ class MwChromHelper(QMainWindow):
         self.dbm = DBManger(app_dir)
 
         self.chrom_ins_map: dict[str, ChromInstance] = {}
+        self.current_userdata_name = ""
 
         # =================== UI =========================
         self.cw = QWidget(self)
@@ -83,9 +99,14 @@ class MwChromHelper(QMainWindow):
         self.vly_left = QVBoxLayout()
         self.hly_main.addLayout(self.vly_left)
 
+        self.hln_1 = HorizontalLine(self)
+        self.vly_left.addWidget(self.hln_1)
+
         self.cmbx_styles = StyleComboBox(self)
-        self.cmbx_styles.setMinimumWidth(100)
         self.vly_left.addWidget(self.cmbx_styles)
+
+        self.pbn_refresh = QPushButton("刷新当前用户数据", self)
+        self.vly_left.addWidget(self.pbn_refresh)
 
         self.trv_left = QTreeView(self)
         self.trv_left.setMinimumWidth(100)
@@ -115,6 +136,7 @@ class MwChromHelper(QMainWindow):
         self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
         self.tab_config.userdata_changed.connect(self.on_tab_config_userdata_changed)
         self.pbn_debug.clicked.connect(self.on_pbn_debug_clicked)
+        self.pbn_refresh.clicked.connect(self.on_pbn_refresh_clicked)
 
         # ================== END UI =====================
 
@@ -146,11 +168,10 @@ class MwChromHelper(QMainWindow):
             chrom_ins.delete_bookmarks,
         )
 
-    def on_trv_left_double_clicked(self):
-        index = self.trv_left.selectedIndexes()[0]
+    def update_by_one_index(self, index: QModelIndex, force: bool):
         name = index.data(Qt.ItemDataRole.DisplayRole)
         exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
-        if name not in self.chrom_ins_map:
+        if force or name not in self.chrom_ins_map:
             chrom_ins = ChromInstance(data_path)
             chrom_ins.fetch_all_profiles()
             chrom_ins.fetch_extensions_from_all_profiles()
@@ -158,6 +179,30 @@ class MwChromHelper(QMainWindow):
             self.chrom_ins_map[name] = chrom_ins
 
         self.update_all_data(self.chrom_ins_map[name], exec_path)
+
+    def clear_active(self):
+        for r in range(self.userdata_model.rowCount()):
+            index = self.userdata_model.index(r, 0)
+            font: QFont = index.data(Qt.ItemDataRole.FontRole)
+            if font is None:
+                font = QFont()
+            font.setBold(False)
+            self.userdata_model.setData(index, font, Qt.ItemDataRole.FontRole)
+            self.userdata_model.dataChanged.emit(index, index, [Qt.ItemDataRole.FontRole])
+
+    def set_active(self, index):
+        self.current_userdata_name = index.data(Qt.ItemDataRole.DisplayRole)
+        font = QFont()
+        font.setBold(True)
+        self.userdata_model.setData(index, font, Qt.ItemDataRole.FontRole)
+        self.userdata_model.dataChanged.emit(index, index, [Qt.ItemDataRole.FontRole])
+
+    def on_trv_left_double_clicked(self):
+        index = self.trv_left.selectedIndexes()[0]
+        self.update_by_one_index(index, force=False)
+
+        self.userdata_model.clear_active()
+        self.userdata_model.set_active(index)
 
     def on_tab_config_userdata_changed(self):
         self.userdata_model.update_model(self.dbm.select_all())
@@ -167,6 +212,15 @@ class MwChromHelper(QMainWindow):
         dd.redirect_output()
         dd.setWindowModality(Qt.WindowModality.NonModal)
         dd.show()
+
+    def on_pbn_refresh_clicked(self):
+        for r in range(self.userdata_model.rowCount()):
+            index = self.userdata_model.index(r, 0)
+            if index.data(Qt.ItemDataRole.DisplayRole) == self.userdata_model.active_name:
+                self.update_by_one_index(index, True)
+                return
+        else:
+            QMessageBox.warning(self, "警告", "没有找到激活的选项。")
 
     def sizeHint(self):
         return QSize(860, 640)

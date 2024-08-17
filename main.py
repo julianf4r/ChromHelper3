@@ -9,7 +9,7 @@ from widgets.mw_chromhelper import MwChromHelper
 import rc_chromhelper3
 
 
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __version_info__ = tuple(map(int, __version__.split('.')))
 
 ORG_NAME = "JnPrograms"
