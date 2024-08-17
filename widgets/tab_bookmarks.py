@@ -2,16 +2,17 @@
 from typing import Callable
 
 from PySide6.QtCore import (
-    QAbstractTableModel,
+    QAbstractTableModel, QPoint,
     QModelIndex, Qt, QSortFilterProxyModel
 )
 from PySide6.QtGui import (
-    QFont,
+    QFont, QAction,
 )
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QTreeView
+    QWidget, QVBoxLayout, QTreeView, QMenu, QMessageBox,
 )
 
+from jnp3.gui import accept_warning
 from chromy import Bookmark, Profile
 from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
@@ -80,6 +81,10 @@ class TabBookmarks(QWidget):
         self.exec_path = exec_path
         self.delete_func = delete_func
 
+        self.menu_ctx = QMenu(self)
+        self.act_delete = QAction("删除", self)
+        self.menu_ctx.addAction(self.act_delete)
+
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
 
@@ -87,6 +92,8 @@ class TabBookmarks(QWidget):
         self.trv_m.setIndentation(0)
         self.trv_m.setSortingEnabled(True)
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+        self.trv_m.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
+        self.trv_m.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.vly_m.addWidget(self.trv_m)
 
         self.bookmarks_model = BookmarksModel(self.bookmarks, self)
@@ -96,6 +103,32 @@ class TabBookmarks(QWidget):
         self.trv_m.setModel(proxy_model)
 
         self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
+        self.act_delete.triggered.connect(self.on_act_delete_triggered)
+        self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
+
+    def on_act_delete_triggered(self):
+        urls = [index.data(Qt.ItemDataRole.UserRole)
+                for index in self.trv_m.selectedIndexes()
+                if index.column() == 0]
+        if len(urls) == 0:
+            QMessageBox.warning(self, "警告", "你没有选中任何书签。")
+            return
+
+        profile_ids = set()
+        for url in urls:
+            profile_ids = profile_ids.union(self.bookmarks[url].profiles.keys())
+
+        if accept_warning(self, True, "警告",
+                          f"你确定要删除这 {len(urls)} 个书签吗？\n建议删除前打开输出窗口查看进度。"):
+            return
+
+        self.delete_func(urls, profile_ids)
+        # 这个更新一定要在弹出提示之前，否则会出问题
+        self.update_after_deletion()
+        QMessageBox.information(self, "提示", "删除完毕。")
+
+    def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
+        self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
 
     def on_trv_m_double_clicked(self):
         index = self.trv_m.selectedIndexes()[0]
