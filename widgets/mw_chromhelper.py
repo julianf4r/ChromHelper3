@@ -90,6 +90,7 @@ class MwChromHelper(QMainWindow):
         self.current_userdata_name = ""
 
         # =================== UI =========================
+        self.setWindowIcon(QIcon(":/assets/chrom_helper_64.png"))
         self.cw = QWidget(self)
         self.setCentralWidget(self.cw)
 
