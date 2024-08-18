@@ -1,4 +1,5 @@
 # coding: utf8
+import os
 from pathlib import Path
 from PySide6.QtCore import (
     QSize, Qt, QAbstractListModel,
@@ -71,21 +72,17 @@ class DaUserDataEdit(QDialog):
 
         self.lb_exec = QLabel("执行文件路径：", self)
         self.lne_exec = QLineEdit(self)
-        self.tbn_exec = QToolButton(self)
-        self.tbn_exec.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        self.tbn_exec.setText("...")
+        self.pbn_exec = QPushButton("选择", self)
         self.hly_exec.addWidget(self.lb_exec)
         self.hly_exec.addWidget(self.lne_exec)
-        self.hly_exec.addWidget(self.tbn_exec)
+        self.hly_exec.addWidget(self.pbn_exec)
 
         self.lb_data = QLabel("用户数据路径：", self)
         self.lne_data = QLineEdit(self)
-        self.tbn_data = QToolButton(self)
-        self.tbn_data.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        self.tbn_data.setText("...")
+        self.pbn_data = QPushButton("选择", self)
         self.hly_data.addWidget(self.lb_data)
         self.hly_data.addWidget(self.lne_data)
-        self.hly_data.addWidget(self.tbn_data)
+        self.hly_data.addWidget(self.pbn_data)
 
         self.hly_bot = QHBoxLayout()
         self.vly_m.addLayout(self.hly_bot)
@@ -100,8 +97,8 @@ class DaUserDataEdit(QDialog):
         self.pbn_save.clicked.connect(self.on_pbn_save_clicked)
         self.pbn_cancel.clicked.connect(self.on_pbn_cancel_clicked)
         self.cmbx_icons.currentIndexChanged.connect(self.on_cmbx_icons_current_index_changed)
-        self.tbn_exec.clicked.connect(self.on_tbn_exec_clicked)
-        self.tbn_data.clicked.connect(self.on_tbn_data_clicked)
+        self.pbn_exec.clicked.connect(self.on_pbn_exec_clicked)
+        self.pbn_data.clicked.connect(self.on_pbn_data_clicked)
 
         # 手动触发一次
         self.on_cmbx_icons_current_index_changed(0)
@@ -116,11 +113,11 @@ class DaUserDataEdit(QDialog):
         # 如果真的要添加，那肯定是除了默认位置之外的，所以这里就不填充了
         # 因为默认的位置可以在初始化时自动填充，如果默认的没了，就重置数据库吧
 
-    def on_tbn_exec_clicked(self):
+    def on_pbn_exec_clicked(self):
         browser = self.cmbx_icons.currentData(Qt.ItemDataRole.DisplayRole)
         exec_path = get_browser_exec_path(browser)
         if exec_path is None:
-            p = "../"
+            p = os.path.expanduser("~")
         else:
             p = str(Path(exec_path).parent)
         filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", p)
@@ -129,11 +126,11 @@ class DaUserDataEdit(QDialog):
 
         self.lne_exec.setText(filename)
 
-    def on_tbn_data_clicked(self):
+    def on_pbn_data_clicked(self):
         browser = self.cmbx_icons.currentData(Qt.ItemDataRole.DisplayRole)
         data_path = get_browser_data_path(browser)
         if data_path is None:
-            d = "../"
+            d = os.path.expanduser("~")
         else:
             d = str(Path(data_path).parent)
         dirname = QFileDialog.getExistingDirectory(self, "打开用户数据目录", d)
