@@ -1,5 +1,5 @@
 # coding: utf8
-import sys
+from logging import Logger
 
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
@@ -13,14 +13,13 @@ from PySide6.QtWidgets import (
     QTreeView, QMessageBox,
 )
 
-from jnp3.gui import StyleComboBox, HorizontalLine
+from jnp3.gui import StyleComboBox, HorizontalLine, DebugOutputButton
 from chromy.chromi import ChromInstance
 
 from .tab_profiles import TabProfiles
 from .tab_extensions import TabExtensions
 from .tab_bookmarks import TabBookmarks
 from .tab_config import TabConfig
-from .da_debug_info import DaDebugInfo, EmittingStream
 
 from core.db_operations import DBManger
 from core.utils import get_icon_path
@@ -81,9 +80,9 @@ class UserDataListModel(QAbstractTableModel):
 
 class MwChromHelper(QMainWindow):
 
-    def __init__(self, app_dir: str, parent=None):
+    def __init__(self, app_dir: str, logger: Logger, parent: QWidget = None):
         super().__init__(parent)
-
+        self.logger = logger
         self.dbm = DBManger(app_dir)
 
         self.chrom_ins_map: dict[str, ChromInstance] = {}
@@ -103,7 +102,7 @@ class MwChromHelper(QMainWindow):
         self.hln_1 = HorizontalLine(self)
         self.vly_left.addWidget(self.hln_1)
 
-        self.cmbx_styles = StyleComboBox(self)
+        self.cmbx_styles = StyleComboBox(parent=self)
         self.vly_left.addWidget(self.cmbx_styles)
 
         self.pbn_refresh = QPushButton("刷新当前用户数据", self)
@@ -114,12 +113,11 @@ class MwChromHelper(QMainWindow):
         self.trv_left.setIndentation(0)
         self.vly_left.addWidget(self.trv_left)
 
-        self.pbn_debug = QPushButton("打开输出窗口", self)
+        self.pbn_debug = DebugOutputButton(logger, text="打开输出窗口", parent=self)
         self.vly_left.addWidget(self.pbn_debug)
 
         self.tw_right = QTabWidget(self)
 
-        # self.hly_main.addWidget(self.trv_left)
         self.hly_main.addWidget(self.tw_right)
         self.hly_main.setStretchFactor(self.vly_left, 1)
         self.hly_main.setStretchFactor(self.tw_right, 5)
@@ -136,7 +134,6 @@ class MwChromHelper(QMainWindow):
 
         self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
         self.tab_config.userdata_changed.connect(self.on_tab_config_userdata_changed)
-        self.pbn_debug.clicked.connect(self.on_pbn_debug_clicked)
         self.pbn_refresh.clicked.connect(self.on_pbn_refresh_clicked)
 
         # ================== END UI =====================
@@ -144,9 +141,6 @@ class MwChromHelper(QMainWindow):
         userdata_info = self.dbm.select_all()
         self.userdata_model = UserDataListModel(userdata_info, self)
         self.trv_left.setModel(self.userdata_model)
-
-        sys.stdout = EmittingStream()
-        sys.stderr = EmittingStream()
 
     def update_all_data(self, chrom_ins: ChromInstance, exec_path: str):
         self.tab_profiles.update_model(
@@ -173,30 +167,13 @@ class MwChromHelper(QMainWindow):
         name = index.data(Qt.ItemDataRole.DisplayRole)
         exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
         if force or name not in self.chrom_ins_map:
-            chrom_ins = ChromInstance(data_path)
+            chrom_ins = ChromInstance(data_path, self.logger)
             chrom_ins.fetch_all_profiles()
             chrom_ins.fetch_extensions_from_all_profiles()
             chrom_ins.fetch_bookmarks_from_all_profiles()
             self.chrom_ins_map[name] = chrom_ins
 
         self.update_all_data(self.chrom_ins_map[name], exec_path)
-
-    def clear_active(self):
-        for r in range(self.userdata_model.rowCount()):
-            index = self.userdata_model.index(r, 0)
-            font: QFont = index.data(Qt.ItemDataRole.FontRole)
-            if font is None:
-                font = QFont()
-            font.setBold(False)
-            self.userdata_model.setData(index, font, Qt.ItemDataRole.FontRole)
-            self.userdata_model.dataChanged.emit(index, index, [Qt.ItemDataRole.FontRole])
-
-    def set_active(self, index):
-        self.current_userdata_name = index.data(Qt.ItemDataRole.DisplayRole)
-        font = QFont()
-        font.setBold(True)
-        self.userdata_model.setData(index, font, Qt.ItemDataRole.FontRole)
-        self.userdata_model.dataChanged.emit(index, index, [Qt.ItemDataRole.FontRole])
 
     def on_trv_left_double_clicked(self):
         index = self.trv_left.selectedIndexes()[0]
@@ -207,12 +184,6 @@ class MwChromHelper(QMainWindow):
 
     def on_tab_config_userdata_changed(self):
         self.userdata_model.update_model(self.dbm.select_all())
-
-    def on_pbn_debug_clicked(self):
-        dd = DaDebugInfo(self)
-        dd.redirect_output()
-        dd.setWindowModality(Qt.WindowModality.NonModal)
-        dd.show()
 
     def on_pbn_refresh_clicked(self):
         for r in range(self.userdata_model.rowCount()):

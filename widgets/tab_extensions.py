@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from jnp3.gui import accept_warning
+from jnp3.gui import accept_warning, run_some_task
 from jnp3.path import path_not_exist
 from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
@@ -130,13 +130,12 @@ class TabExtensions(QWidget):
             profile_ids = profile_ids.union(self.extensions[ext_id].profiles)
 
         if accept_warning(self, True, "警告",
-                          f"你确定要删除这 {len(ext_ids)} 个插件吗？\n建议删除前打开输出窗口查看进度。"):
+                          f"你确定要删除这 {len(ext_ids)} 个插件吗？"):
             return
 
-        self.delete_func(ext_ids, profile_ids)
-        # 这个更新一定要在弹出提示之前，否则会出问题
+        run_some_task("提示", "正在删除，请稍等……", self,
+                      self.delete_func, ext_ids, profile_ids)
         self.update_after_deletion()
-        QMessageBox.information(self, "提示", "删除完毕。")
 
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
         self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))

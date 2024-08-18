@@ -1,5 +1,4 @@
 # coding: utf8
-from datetime import datetime
 from typing import Callable
 
 from PySide6.QtCore import (
@@ -12,7 +11,7 @@ from PySide6.QtWidgets import (
     QAbstractItemView, QWidget, QMessageBox,
 )
 
-from jnp3.gui import accept_warning
+from jnp3.gui import accept_warning, run_some_task
 
 from core.utils import open_profiles
 
@@ -71,10 +70,6 @@ class DaShowProfiles(QDialog):
         self.trv_p.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.vly_m.addWidget(self.trv_p)
 
-        self.lne_info = QLineEdit(self)
-        self.lne_info.setReadOnly(True)
-        self.vly_m.addWidget(self.lne_info)
-
         self.hly_bot = QHBoxLayout()
         self.vly_m.addLayout(self.hly_bot)
 
@@ -106,13 +101,12 @@ class DaShowProfiles(QDialog):
         if len(profile_ids_to_delete) == 0:
             QMessageBox.warning(self, "警告", "你没有选中任何用户。")
             return
-        if accept_warning(self, True, "警告", f"你确定删除这 {len(profile_ids_to_delete)} 个吗？"):
+        if accept_warning(self, True, "警告",
+                          f"你确定删除这 {len(profile_ids_to_delete)} 个吗？"):
             return
 
-        t = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.lne_info.setText(f"[{t}] 正在删除……")
-        self.delete_func([self.lne_mark.text()], profile_ids_to_delete)
+        run_some_task("提示", "正在删除，请稍等……", self,
+                      self.delete_func, [self.lne_mark.text()], profile_ids_to_delete)
 
-        QMessageBox.information(self, "提示", f"[{t}] 删除完毕，可以打开输出窗口查看详情。")
         self.deletion_finished.emit()
         self.accept()
