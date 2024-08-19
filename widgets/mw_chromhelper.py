@@ -166,22 +166,26 @@ class MwChromHelper(QMainWindow):
             chrom_ins.delete_bookmarks,
         )
 
+    def _update_chrom_ins_map(self, name: str, data_path: str):
+        # 这个函数不涉及 UI 操作，避免在子线程运行时出问题
+        chrom_ins = ChromInstance(data_path, self.logger)
+        chrom_ins.fetch_all_profiles()
+        chrom_ins.fetch_extensions_from_all_profiles()
+        chrom_ins.fetch_bookmarks_from_all_profiles()
+        self.chrom_ins_map[name] = chrom_ins
+
     def update_by_one_index(self, index: QModelIndex, force: bool):
         name = index.data(Qt.ItemDataRole.DisplayRole)
         exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
         if force or name not in self.chrom_ins_map:
-            chrom_ins = ChromInstance(data_path, self.logger)
-            chrom_ins.fetch_all_profiles()
-            chrom_ins.fetch_extensions_from_all_profiles()
-            chrom_ins.fetch_bookmarks_from_all_profiles()
-            self.chrom_ins_map[name] = chrom_ins
-
+            run_some_task("提示", "正在获取浏览器数据……", self,
+                          self._update_chrom_ins_map,
+                          name=name, data_path=data_path)
         self.update_all_data(self.chrom_ins_map[name], exec_path)
 
     def on_trv_left_double_clicked(self):
         index = self.trv_left.selectedIndexes()[0]
-        run_some_task("提示", "正在获取浏览器数据……", self,
-                      self.update_by_one_index, index=index, force=False)
+        self.update_by_one_index(index, force=False)
 
         self.userdata_model.clear_active()
         self.userdata_model.set_active(index)
@@ -193,8 +197,7 @@ class MwChromHelper(QMainWindow):
         for r in range(self.userdata_model.rowCount()):
             index = self.userdata_model.index(r, 0)
             if index.data(Qt.ItemDataRole.DisplayRole) == self.userdata_model.active_name:
-                run_some_task("提示", "正在重新获取浏览器数据……", self,
-                              self.update_by_one_index, index=index, force=True)
+                self.update_by_one_index(index, force=True)
                 return
         else:
             QMessageBox.warning(self, "警告", "没有找到激活的选项。")
