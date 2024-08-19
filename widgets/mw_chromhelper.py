@@ -13,7 +13,10 @@ from PySide6.QtWidgets import (
     QTreeView, QMessageBox,
 )
 
-from jnp3.gui import StyleComboBox, HorizontalLine, DebugOutputButton
+from jnp3.gui import (
+    StyleComboBox, HorizontalLine, DebugOutputButton,
+    run_some_task,
+)
 from chromy.chromi import ChromInstance
 
 from .tab_profiles import TabProfiles
@@ -177,7 +180,8 @@ class MwChromHelper(QMainWindow):
 
     def on_trv_left_double_clicked(self):
         index = self.trv_left.selectedIndexes()[0]
-        self.update_by_one_index(index, force=False)
+        run_some_task("提示", "正在获取浏览器数据……", self,
+                      self.update_by_one_index, index=index, force=False)
 
         self.userdata_model.clear_active()
         self.userdata_model.set_active(index)
@@ -189,7 +193,8 @@ class MwChromHelper(QMainWindow):
         for r in range(self.userdata_model.rowCount()):
             index = self.userdata_model.index(r, 0)
             if index.data(Qt.ItemDataRole.DisplayRole) == self.userdata_model.active_name:
-                self.update_by_one_index(index, True)
+                run_some_task("提示", "正在重新获取浏览器数据……", self,
+                              self.update_by_one_index, index=index, force=True)
                 return
         else:
             QMessageBox.warning(self, "警告", "没有找到激活的选项。")
