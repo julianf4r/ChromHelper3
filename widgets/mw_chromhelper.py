@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 
 from jnp3.gui import (
     StyleComboBox, HorizontalLine, DebugOutputButton,
-    run_some_task,
+    run_some_task, CheckUpdateButton,
 )
 from chromy.chromi import ChromInstance
 
@@ -83,7 +83,14 @@ class UserDataListModel(QAbstractTableModel):
 
 class MwChromHelper(QMainWindow):
 
-    def __init__(self, app_dir: str, logger: Logger, parent: QWidget = None):
+    def __init__(
+            self,
+            app_name: str,
+            current_version: str,
+            app_dir: str,
+            logger: Logger,
+            parent: QWidget = None
+    ):
         super().__init__(parent)
         self.logger = logger
         self.dbm = DBManger(app_dir)
@@ -115,6 +122,15 @@ class MwChromHelper(QMainWindow):
         self.trv_left.setMinimumWidth(100)
         self.trv_left.setIndentation(0)
         self.vly_left.addWidget(self.trv_left)
+
+        self.pbn_check_update = CheckUpdateButton(
+            update_url=f"https://updates.oranj.work/{app_name}.json",
+            app_name=app_name,
+            current_version=current_version,
+            logger=self.logger,
+            parent=self
+        )
+        self.vly_left.addWidget(self.pbn_check_update)
 
         self.pbn_debug = DebugOutputButton(logger, text="打开输出窗口", parent=self)
         self.vly_left.addWidget(self.pbn_debug)

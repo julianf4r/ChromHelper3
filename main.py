@@ -32,7 +32,7 @@ def main():
     logger.setLevel(logging.INFO)
     sys.excepthook = get_excepthook_for(logger)
 
-    win = MwChromHelper(get_app_dir(), logger)
+    win = MwChromHelper(APP_NAME, __version__, get_app_dir(), logger)
     win.setWindowTitle(f"{APP_NAME} v{__version__}")
     win.show()
     return app.exec()
