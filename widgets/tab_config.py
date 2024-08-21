@@ -1,5 +1,6 @@
 # coding: utf8
 import os
+import sys
 from pathlib import Path
 from PySide6.QtCore import (
     QSize, Qt, QAbstractListModel,
@@ -8,7 +9,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QComboBox, QLineEdit, QDialog, QToolButton,
+    QLabel, QComboBox, QLineEdit, QDialog,
     QMessageBox, QFileDialog,
 )
 
@@ -120,9 +121,16 @@ class DaUserDataEdit(QDialog):
             p = os.path.expanduser("~")
         else:
             p = str(Path(exec_path).parent)
-        filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", p)
+        filename, _ = QFileDialog.getOpenFileName(self, "打开执行文件", p)  # type: (str, str)
         if len(filename) == 0:
             return
+
+        # MacOS 的执行文件只通过 QFileDialog 选不到，所以手动加
+        if sys.platform == "darwin":
+            filename_p = Path(filename)
+            if filename_p.is_dir() and filename.endswith(".app"):
+                name = filename_p.stem
+                filename = str(filename_p / "Contents" / "MacOS" / name)
 
         self.lne_exec.setText(filename)
 
