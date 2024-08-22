@@ -16,6 +16,8 @@ from jnp3.gui import create_round_icon_from_pixmap, create_mono_icon
 
 from chromy import Profile
 
+from .profile_pic import get_profile_pic
+
 
 SUPPORTED_BROWSERS = ["chrome", "edge", "brave", "vivaldi", "yandex", "chromium"]
 
@@ -243,6 +245,7 @@ def get_profile_picture(browser: str, profile: Profile) -> QIcon:
                     QIcon(get_icon_path(profile.avatar_icon, f"chrome_avatars")).pixmap(96, 96),
                     size=96
                 )
+        return get_profile_pic(profile.default_avatar_fill_color, profile.default_avatar_stroke_color)
 
     elif browser == "edge":
         if len(profile.gaia_picture_file_name) != 0:
