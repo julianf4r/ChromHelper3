@@ -1,6 +1,6 @@
 # coding: utf8
 from PySide6.QtCore import (
-    QAbstractTableModel, QModelIndex, Qt, QPoint,
+    QAbstractTableModel, QModelIndex, Qt, QPoint, QSize
 )
 from PySide6.QtGui import (
     QFont, QAction,
@@ -16,13 +16,15 @@ from core.utils import (
     sort_profiles_id_func,
     ProfileSortFilterProxyModel,
     open_profiles,
+    get_profile_picture,
 )
 
 
 class ProfilesModel(QAbstractTableModel):
 
-    def __init__(self, profiles: dict[str, Profile], parent=None):
+    def __init__(self, browser: str, profiles: dict[str, Profile], parent=None):
         super().__init__(parent)
+        self.browser = browser
         self.profiles = profiles
         self.profile_ids = list(profiles.keys())
         self.profile_ids.sort(key=sort_profiles_id_func)
@@ -36,17 +38,19 @@ class ProfilesModel(QAbstractTableModel):
         return len(self.headers)
 
     def data(self, index: QModelIndex, role: int = ...):
+        profile_id = self.profile_ids[index.row()]
+        profile = self.profiles[profile_id]
+        col = index.column()
         if role == Qt.ItemDataRole.DisplayRole:
-            row = index.row()
-            col = index.column()
-            profile_id = self.profile_ids[row]
-            profile = self.profiles[profile_id]
             col_map = {
                 0: profile.id,
                 1: profile.name,
                 2: profile.user_name,
             }
             return col_map[col]
+        elif role == Qt.ItemDataRole.DecorationRole:
+            if col == 1:
+                return get_profile_picture(self.browser, profile)
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):
         if orientation == Qt.Orientation.Horizontal:
@@ -57,9 +61,10 @@ class ProfilesModel(QAbstractTableModel):
                 font.setBold(True)
                 return font
 
-    def update_data(self, profiles: dict[str, Profile]):
+    def update_data(self, browser: str, profiles: dict[str, Profile]):
         self.beginResetModel()
 
+        self.browser = browser
         self.profiles = profiles
         self.profile_ids = list(profiles.keys())
         self.profile_ids.sort(key=sort_profiles_id_func)
@@ -71,12 +76,14 @@ class TabProfiles(QWidget):
 
     def __init__(
             self,
+            browser: str = "",
             profiles: dict[str, Profile] = None,
             userdata_dir: str = "",
             exec_path: str = "",
             parent: QWidget = None
     ):
         super().__init__(parent)
+        self.browser = browser
         self.profiles = profiles or {}
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
@@ -92,9 +99,13 @@ class TabProfiles(QWidget):
         self.trv_m.setIndentation(0)
         self.trv_m.setSortingEnabled(True)
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
+        self.trv_m.setUniformRowHeights(True)
+        self.trv_m.setStyleSheet("QTreeView::item { height: 40px; }")
+        self.trv_m.setIconSize(QSize(32, 32))
+
         self.vly_m.addWidget(self.trv_m)
 
-        self.profiles_model = ProfilesModel(self.profiles, self)
+        self.profiles_model = ProfilesModel(browser, self.profiles, self)
 
         proxy_model = ProfileSortFilterProxyModel(self)
         proxy_model.setSourceModel(self.profiles_model)
@@ -114,13 +125,15 @@ class TabProfiles(QWidget):
 
     def update_model(
             self,
+            browser: str,
             profiles: dict[str, Profile],
             userdata_dir: str,
             exec_path: str,
     ):
+        self.browser = browser
         self.profiles = profiles
         self.userdata_dir = userdata_dir
         self.exec_path = exec_path
-        self.profiles_model.update_data(profiles)
+        self.profiles_model.update_data(browser, profiles)
 
         self.trv_m.setColumnWidth(1, 200)
