@@ -17,7 +17,7 @@ from jnp3.gui import (
     StyleComboBox, HorizontalLine, DebugOutputButton,
     run_some_task,
 )
-from chromy.chromi import ChromInstance
+from chromy import ChromInstance
 
 from .tab_profiles import TabProfiles
 from .tab_extensions import TabExtensions
@@ -53,7 +53,7 @@ class UserDataListModel(QAbstractTableModel):
         if role == Qt.ItemDataRole.DecorationRole:
             return QIcon(get_icon_path(self.userdata_info[row][1]))
         if role == Qt.ItemDataRole.UserRole:
-            return self.userdata_info[row][2], self.userdata_info[row][3]
+            return self.userdata_info[row][1], self.userdata_info[row][2], self.userdata_info[row][3]
         if role == Qt.ItemDataRole.FontRole:
             if self.userdata_info[row][0] == self.active_name:
                 font = QFont()
@@ -152,8 +152,9 @@ class MwChromHelper(QMainWindow):
         self.userdata_model = UserDataListModel(userdata_info, self)
         self.trv_left.setModel(self.userdata_model)
 
-    def update_all_data(self, chrom_ins: ChromInstance, exec_path: str):
+    def update_all_data(self, chrom_ins: ChromInstance, browser: str, exec_path: str):
         self.tab_profiles.update_model(
+            browser,
             chrom_ins.profiles,
             chrom_ins.userdata_dir,
             exec_path,
@@ -183,12 +184,12 @@ class MwChromHelper(QMainWindow):
 
     def update_by_one_index(self, index: QModelIndex, force: bool):
         name = index.data(Qt.ItemDataRole.DisplayRole)
-        exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
+        type_, exec_path, data_path = index.data(Qt.ItemDataRole.UserRole)
         if force or name not in self.chrom_ins_map:
             run_some_task("提示", "正在获取浏览器数据……", self,
                           self._update_chrom_ins_map,
                           name=name, data_path=data_path)
-        self.update_all_data(self.chrom_ins_map[name], exec_path)
+        self.update_all_data(self.chrom_ins_map[name], type_, exec_path)
 
     def on_trv_left_double_clicked(self):
         index = self.trv_left.selectedIndexes()[0]

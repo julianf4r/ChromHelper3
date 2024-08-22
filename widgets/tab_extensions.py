@@ -3,7 +3,8 @@ from typing import Callable
 
 from PySide6.QtCore import (
     QAbstractTableModel, QPoint,
-    QModelIndex, Qt, QSortFilterProxyModel
+    QModelIndex, Qt, QSortFilterProxyModel,
+    QSize,
 )
 from PySide6.QtGui import (
     QIcon, QFont, QAction,
@@ -54,6 +55,7 @@ class ExtensionsModel(QAbstractTableModel):
                 else:
                     return QIcon(ext.icon)
         elif role == Qt.ItemDataRole.UserRole:
+            # 任意一列都返回 id
             return ext.id
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):
@@ -105,6 +107,9 @@ class TabExtensions(QWidget):
         self.trv_m.sortByColumn(0, Qt.SortOrder.AscendingOrder)
         self.trv_m.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
         self.trv_m.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.trv_m.setUniformRowHeights(True)
+        self.trv_m.setStyleSheet("QTreeView::item { height: 40px; }")
+        self.trv_m.setIconSize(QSize(32, 32))
 
         self.vly_m.addWidget(self.trv_m)
 
