@@ -236,17 +236,19 @@ def get_profile_picture(browser: str, profile: Profile) -> QIcon:
         if len(profile.gaia_picture_file_name) != 0:
             profile_pic = Path(profile.profile_dir, profile.gaia_picture_file_name)
             if profile_pic.exists():
-                return create_round_icon_from_pixmap(QIcon(str(profile_pic)).pixmap(96, 96))
+                return create_round_icon_from_pixmap(QIcon(str(profile_pic)).pixmap(96, 96), 96)
         if len(profile.avatar_icon) != 0:
             if profile.avatar_icon != "IDR_PROFILE_AVATAR_26":
                 return create_round_icon_from_pixmap(
-                    QIcon(get_icon_path(profile.avatar_icon, f"chrome_avatars")).pixmap(96, 96))
+                    QIcon(get_icon_path(profile.avatar_icon, f"chrome_avatars")).pixmap(96, 96),
+                    size=96
+                )
 
     elif browser == "edge":
         if len(profile.gaia_picture_file_name) != 0:
             profile_pic = Path(profile.profile_dir, profile.gaia_picture_file_name)
             if profile_pic.exists():
-                return create_round_icon_from_pixmap(QIcon(str(profile_pic)).pixmap(96, 96))
+                return create_round_icon_from_pixmap(QIcon(str(profile_pic)).pixmap(96, 96), 96)
         if len(profile.avatar_icon) != 0:
             return QIcon(get_icon_path(profile.avatar_icon, f"{browser}_avatars"))
 
