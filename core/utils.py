@@ -16,7 +16,7 @@ from jnp3.gui import create_round_icon_from_pixmap, create_mono_icon
 
 from chromy import Profile
 
-from .profile_pic import get_profile_pic
+from .profile_pic import create_profile_pic
 
 
 SUPPORTED_BROWSERS = ["chrome", "edge", "brave", "vivaldi", "yandex", "chromium"]
@@ -226,6 +226,9 @@ def open_profiles(
         return
 
     profile_ids = [index.data(Qt.ItemDataRole.DisplayRole) for index in indexes if index.column() == 0]
+    if len(profile_ids) == 0:
+        QMessageBox.warning(widget, "提示", "你没有选中任何用户。")
+        return
 
     cmd = rf'"{exec_path}" --user-data-dir="{userdata_dir}" --profile-directory="{{0}}"'
     for profile_id in profile_ids:
@@ -245,7 +248,7 @@ def get_profile_picture(browser: str, profile: Profile) -> QIcon:
                     QIcon(get_icon_path(profile.avatar_icon, f"chrome_avatars")).pixmap(96, 96),
                     size=96
                 )
-        return get_profile_pic(profile.default_avatar_fill_color, profile.default_avatar_stroke_color)
+        return create_profile_pic(profile.default_avatar_fill_color, profile.default_avatar_stroke_color)
 
     elif browser == "edge":
         if len(profile.gaia_picture_file_name) != 0:
@@ -255,11 +258,7 @@ def get_profile_picture(browser: str, profile: Profile) -> QIcon:
         if len(profile.avatar_icon) != 0:
             return QIcon(get_icon_path(profile.avatar_icon, f"{browser}_avatars"))
 
-    elif browser in ["brave", "vivaldi"]:
-        if len(profile.avatar_icon) != 0:
-            return QIcon(get_icon_path(profile.avatar_icon, f"{browser}_avatars"))
-
-    elif browser == "yandex":
+    elif browser in ["brave", "vivaldi", "yandex"]:
         if len(profile.avatar_icon) != 0:
             return QIcon(get_icon_path(profile.avatar_icon, f"{browser}_avatars"))
 

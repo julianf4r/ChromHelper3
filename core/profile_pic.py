@@ -31,7 +31,7 @@ def argb_to_rgb(argb_value: int) -> int:
     return rgba_value
 
 
-def get_profile_pic(bg_rgba: int, fg_rgba: int) -> QIcon:
+def create_profile_pic(bg_rgba: int, fg_rgba: int) -> QIcon:
     if (bg_rgba, fg_rgba) in profile_icon_map:
         return profile_icon_map[(bg_rgba, fg_rgba)]
 

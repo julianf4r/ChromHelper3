@@ -18,6 +18,7 @@ from jnp3.gui import accept_warning, run_some_task
 from jnp3.path import path_not_exist
 from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
+from .da_raw_data import DaRawData
 from core.utils import (
     sort_profiles_id_func,
     ProfileSortFilterProxyModel,
@@ -96,7 +97,10 @@ class TabExtensions(QWidget):
 
         self.menu_ctx = QMenu(self)
         self.act_delete = QAction("删除", self)
+        self.act_show_data = QAction("查看原始数据", self)
         self.menu_ctx.addAction(self.act_delete)
+        self.menu_ctx.addSeparator()
+        self.menu_ctx.addAction(self.act_show_data)
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -120,6 +124,7 @@ class TabExtensions(QWidget):
 
         self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
         self.act_delete.triggered.connect(self.on_act_delete_triggered)
+        self.act_show_data.triggered.connect(self.on_act_show_data_triggered)
         self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
 
     def on_act_delete_triggered(self):
@@ -141,6 +146,18 @@ class TabExtensions(QWidget):
         run_some_task("提示", "正在删除，请稍等……", self,
                       self.delete_func, ext_ids, profile_ids)
         self.update_after_deletion()
+
+    def on_act_show_data_triggered(self):
+        extension_ids = [index.data(Qt.ItemDataRole.UserRole)
+                         for index in self.trv_m.selectedIndexes()
+                         if index.column() == 0]
+        if len(extension_ids) == 0:
+            QMessageBox.warning(self, "提示", "你没有选中任何插件。")
+            return
+        # 只取第一个用户的
+        extension = self.extensions[extension_ids[0]]
+        dr = DaRawData(extension.raw_data, self)
+        dr.show()
 
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
         self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
