@@ -3,11 +3,11 @@ from PySide6.QtCore import (
     QAbstractTableModel, QModelIndex, Qt, QPoint, QSize
 )
 from PySide6.QtGui import (
-    QFont, QAction,
+    QFont, QAction, QIcon,
 )
 from PySide6.QtWidgets import (
     QWidget, QTreeView,
-    QVBoxLayout, QMenu,
+    QVBoxLayout, QMenu, QMessageBox,
 )
 
 from chromy.structs import Profile
@@ -18,6 +18,7 @@ from core.utils import (
     open_profiles,
     get_profile_picture,
 )
+from .da_raw_data import DaRawData
 
 
 class ProfilesModel(QAbstractTableModel):
@@ -28,6 +29,8 @@ class ProfilesModel(QAbstractTableModel):
         self.profiles = profiles
         self.profile_ids = list(profiles.keys())
         self.profile_ids.sort(key=sort_profiles_id_func)
+
+        self.profile_pic_cache: dict[str, QIcon] = {}
 
         self.headers = ["ID", "名称", "邮箱"]
 
@@ -50,7 +53,13 @@ class ProfilesModel(QAbstractTableModel):
             return col_map[col]
         elif role == Qt.ItemDataRole.DecorationRole:
             if col == 1:
-                return get_profile_picture(self.browser, profile)
+                cache_id = f"{self.browser}!{profile_id}"
+                if cache_id in self.profile_pic_cache:
+                    return self.profile_pic_cache[cache_id]
+                else:
+                    pic = get_profile_picture(self.browser, profile)
+                    self.profile_pic_cache[cache_id] = pic
+                    return pic
 
     def headerData(self, section: int, orientation: Qt.Orientation, role: int = ...):
         if orientation == Qt.Orientation.Horizontal:
@@ -68,6 +77,8 @@ class ProfilesModel(QAbstractTableModel):
         self.profiles = profiles
         self.profile_ids = list(profiles.keys())
         self.profile_ids.sort(key=sort_profiles_id_func)
+
+        self.profile_pic_cache.clear()
 
         self.endResetModel()
 
@@ -90,7 +101,10 @@ class TabProfiles(QWidget):
 
         self.menu_ctx = QMenu(self)
         self.act_open = QAction("打开", self)
+        self.act_show_data = QAction("查看原始数据", self)
         self.menu_ctx.addAction(self.act_open)
+        self.menu_ctx.addSeparator()
+        self.menu_ctx.addAction(self.act_show_data)
 
         self.vly_m = QVBoxLayout()
         self.setLayout(self.vly_m)
@@ -115,10 +129,23 @@ class TabProfiles(QWidget):
         self.trv_m.setSelectionMode(QTreeView.SelectionMode.ExtendedSelection)
         self.trv_m.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.act_open.triggered.connect(self.on_act_open_triggered)
+        self.act_show_data.triggered.connect(self.on_act_show_data_triggered)
         self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
 
     def on_act_open_triggered(self):
         open_profiles(self, self.trv_m.selectedIndexes(), self.exec_path, self.userdata_dir)
+
+    def on_act_show_data_triggered(self):
+        profile_ids = [index.data(Qt.ItemDataRole.DisplayRole)
+                       for index in self.trv_m.selectedIndexes()
+                       if index.column() == 0]
+        if len(profile_ids) == 0:
+            QMessageBox.warning(self, "提示", "你没有选中任何用户。")
+            return
+        # 只取第一个用户的
+        profile = self.profiles[profile_ids[0]]
+        dr = DaRawData(profile.raw_data, self)
+        dr.show()
 
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
         self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
