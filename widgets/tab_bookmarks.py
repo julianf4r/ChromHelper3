@@ -82,7 +82,9 @@ class TabBookmarks(QWidget):
         self.delete_func = delete_func
 
         self.menu_ctx = QMenu(self)
+        self.act_check = QAction("查看用户", self)
         self.act_delete = QAction("删除", self)
+        self.menu_ctx.addAction(self.act_check)
         self.menu_ctx.addAction(self.act_delete)
 
         self.vly_m = QVBoxLayout()
@@ -103,6 +105,7 @@ class TabBookmarks(QWidget):
         self.trv_m.setModel(proxy_model)
 
         self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
+        self.act_check.triggered.connect(self.on_act_check_triggered)
         self.act_delete.triggered.connect(self.on_act_delete_triggered)
         self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
 
@@ -126,11 +129,17 @@ class TabBookmarks(QWidget):
                       self.delete_func, urls, profile_ids)
         self.update_after_deletion()
 
+    def on_act_check_triggered(self):
+        if len(self.trv_m.selectedIndexes()) == 0:
+            QMessageBox.warning(self, "提示", "你没有选中任何书签。")
+            return
+        index = self.trv_m.selectedIndexes()[0]
+        self.on_trv_m_double_clicked(index)
+
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
         self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
 
-    def on_trv_m_double_clicked(self):
-        index = self.trv_m.selectedIndexes()[0]
+    def on_trv_m_double_clicked(self, index: QModelIndex):
         url: str = index.data(Qt.ItemDataRole.UserRole)
         bmk = self.bookmarks[url]
 

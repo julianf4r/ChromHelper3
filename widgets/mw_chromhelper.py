@@ -3,14 +3,14 @@ from logging import Logger
 
 from PySide6.QtCore import (
     QSize, QAbstractTableModel,
-    QModelIndex, Qt,
+    QModelIndex, Qt, QPoint,
 )
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon, QFont, QAction
 from PySide6.QtWidgets import (
     QMainWindow, QWidget,
     QHBoxLayout, QVBoxLayout,
     QTabWidget, QPushButton,
-    QTreeView, QMessageBox,
+    QTreeView, QMessageBox, QMenu,
 )
 
 from jnp3.gui import (
@@ -121,7 +121,12 @@ class MwChromHelper(QMainWindow):
         self.trv_left = QTreeView(self)
         self.trv_left.setMinimumWidth(100)
         self.trv_left.setIndentation(0)
+        self.trv_left.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.vly_left.addWidget(self.trv_left)
+
+        self.trv_menu_ctx = QMenu(self)
+        self.act_switch = QAction("切换", self)
+        self.trv_menu_ctx.addAction(self.act_switch)
 
         self.pbn_debug = DebugOutputButton(logger, text="打开输出窗口", parent=self)
         self.vly_left.addWidget(self.pbn_debug)
@@ -145,6 +150,8 @@ class MwChromHelper(QMainWindow):
         self.trv_left.doubleClicked.connect(self.on_trv_left_double_clicked)
         self.tab_config.userdata_changed.connect(self.on_tab_config_userdata_changed)
         self.pbn_refresh.clicked.connect(self.on_pbn_refresh_clicked)
+        self.trv_left.customContextMenuRequested.connect(self.on_trv_left_custom_context_menu_requested)
+        self.act_switch.triggered.connect(self.on_act_switch_triggered)
 
         # ================== END UI =====================
 
@@ -191,8 +198,17 @@ class MwChromHelper(QMainWindow):
                           name=name, data_path=data_path)
         self.update_all_data(self.chrom_ins_map[name], type_, exec_path)
 
-    def on_trv_left_double_clicked(self):
+    def on_act_switch_triggered(self):
+        if len(self.trv_left.selectedIndexes()) == 0:
+            QMessageBox.warning(self, "提示", "你没有选中任何浏览器。")
+            return
         index = self.trv_left.selectedIndexes()[0]
+        self.on_trv_left_double_clicked(index)
+
+    def on_trv_left_custom_context_menu_requested(self, pos: QPoint):
+        self.trv_menu_ctx.exec(self.trv_left.viewport().mapToGlobal(pos))
+
+    def on_trv_left_double_clicked(self, index: QModelIndex):
         self.update_by_one_index(index, force=False)
 
         self.userdata_model.clear_active()
