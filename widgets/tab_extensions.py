@@ -96,8 +96,10 @@ class TabExtensions(QWidget):
         self.delete_func = delete_func
 
         self.menu_ctx = QMenu(self)
+        self.act_check = QAction("查看用户", self)
         self.act_delete = QAction("删除", self)
         self.act_show_data = QAction("查看原始数据", self)
+        self.menu_ctx.addAction(self.act_check)
         self.menu_ctx.addAction(self.act_delete)
         self.menu_ctx.addSeparator()
         self.menu_ctx.addAction(self.act_show_data)
@@ -123,6 +125,7 @@ class TabExtensions(QWidget):
         self.trv_m.setModel(proxy_model)
 
         self.trv_m.doubleClicked.connect(self.on_trv_m_double_clicked)
+        self.act_check.triggered.connect(self.on_act_check_triggered)
         self.act_delete.triggered.connect(self.on_act_delete_triggered)
         self.act_show_data.triggered.connect(self.on_act_show_data_triggered)
         self.trv_m.customContextMenuRequested.connect(self.on_trv_m_custom_context_menu_requested)
@@ -159,11 +162,17 @@ class TabExtensions(QWidget):
         dr = DaRawData(extension.raw_data, self)
         dr.show()
 
+    def on_act_check_triggered(self):
+        if len(self.trv_m.selectedIndexes()) == 0:
+            QMessageBox.warning(self, "提示", "你没有选中任何插件。")
+            return
+        index = self.trv_m.selectedIndexes()[0]
+        self.on_trv_m_double_clicked(index)
+
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
         self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
 
-    def on_trv_m_double_clicked(self):
-        index = self.trv_m.selectedIndexes()[0]
+    def on_trv_m_double_clicked(self, index: QModelIndex):
         ext_id: str = index.data(Qt.ItemDataRole.UserRole)
         ext = self.extensions[ext_id]
 
