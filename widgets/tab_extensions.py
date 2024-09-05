@@ -8,6 +8,7 @@ from compat import (
 )
 
 from jnp3.gui import accept_warning, run_some_task
+from jnp3.gui.misc import get_exec
 from jnp3.path import path_not_exist
 from chromy import Extension, Profile
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
@@ -16,7 +17,6 @@ from core.utils import (
     sort_profiles_id_func,
     ProfileSortFilterProxyModel,
     get_icon_path,
-    get_exec,
 )
 
 

@@ -11,6 +11,7 @@ from jnp3.gui import (
     StyleComboBox, HorizontalLine, DebugOutputButton,
     run_some_task, CheckUpdateButton,
 )
+from jnp3.gui.misc import get_exec
 from chromy import ChromInstance
 
 from .tab_profiles import TabProfiles
@@ -19,7 +20,7 @@ from .tab_bookmarks import TabBookmarks
 from .tab_config import TabConfig
 
 from core.db_operations import DBManger
-from core.utils import get_icon_path, get_exec
+from core.utils import get_icon_path
 
 
 class UserDataListModel(QAbstractTableModel):

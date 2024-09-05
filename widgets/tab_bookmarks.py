@@ -8,8 +8,9 @@ from compat import (
 )
 
 from jnp3.gui import accept_warning, run_some_task
+from jnp3.gui.misc import get_exec
 from chromy import Bookmark, Profile
-from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel, get_exec
+from core.utils import sort_profiles_id_func, ProfileSortFilterProxyModel
 from .da_show_profiles import DaShowProfiles, ShowProfilesModel
 
 

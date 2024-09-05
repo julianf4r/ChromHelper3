@@ -5,6 +5,7 @@ from compat import (
     QMenu, QMessageBox, QTreeView, QVBoxLayout, QWidget,
 )
 
+from jnp3.gui.misc import get_exec
 from chromy.structs import Profile
 
 from core.utils import (
@@ -12,7 +13,6 @@ from core.utils import (
     ProfileSortFilterProxyModel,
     open_profiles,
     get_profile_picture,
-    get_exec,
 )
 from .da_raw_data import DaRawData
 

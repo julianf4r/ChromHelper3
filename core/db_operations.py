@@ -1,6 +1,6 @@
 # coding: utf8
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from Sqlite3Helper import (
     Sqlite3Worker, Column, DataType,
     Operand, Table,

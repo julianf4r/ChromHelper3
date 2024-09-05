@@ -5,10 +5,10 @@ from pathlib import Path
 
 from jnp3.path import get_log_dir
 from jnp3.misc import get_excepthook_for
+from jnp3.gui.misc import get_exec
 
 from compat import QApplication
 from widgets.mw_chromhelper import MwChromHelper
-from core.utils import get_exec
 import rc_chromhelper3
 
 

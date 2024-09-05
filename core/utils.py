@@ -2,7 +2,6 @@
 import time
 import subprocess
 from pathlib import Path
-from typing import Callable
 
 from compat import (
     Qt, QModelIndex, QSortFilterProxyModel,
@@ -276,10 +275,3 @@ class ProfileSortFilterProxyModel(QSortFilterProxyModel):
             return sort_profiles_id_func(left) < sort_profiles_id_func(right)
 
         return super().lessThan(source_left, source_right)
-
-
-def get_exec(obj) -> Callable:
-    if hasattr(obj, "exec"):
-        return obj.exec
-    else:
-        return obj.exec_

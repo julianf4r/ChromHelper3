@@ -10,9 +10,10 @@ from compat import (
 )
 
 from jnp3.gui import CardsArea, Card, accept_warning
+from jnp3.gui.misc import get_exec
 from chromy import get_browser_exec_path, get_browser_data_path
 
-from core.utils import get_icon_path, SUPPORTED_BROWSERS, get_exec
+from core.utils import get_icon_path, SUPPORTED_BROWSERS
 from core.db_operations import DBManger
 
 
