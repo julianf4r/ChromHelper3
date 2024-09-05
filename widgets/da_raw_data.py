@@ -1,12 +1,8 @@
 # coding: utf8
 from typing import Any
-from PySide6.QtCore import (
-    QSize, QAbstractItemModel,
-    QObject, QModelIndex, Qt,
-)
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QTreeView,
-    QWidget,
+from compat import (
+    Qt, QAbstractItemModel, QModelIndex, QObject, QSize,
+    QDialog, QTreeView, QVBoxLayout, QWidget,
 )
 
 

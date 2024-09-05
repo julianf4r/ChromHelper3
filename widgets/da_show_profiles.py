@@ -1,14 +1,9 @@
 # coding: utf8
 from typing import Callable
 
-from PySide6.QtCore import (
-    QSize, QAbstractTableModel,
-    QModelIndex, Qt, Signal,
-)
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLineEdit,
-    QTreeView, QHBoxLayout, QPushButton,
-    QAbstractItemView, QWidget, QMessageBox,
+from compat import (
+    Qt, QAbstractTableModel, QModelIndex, QSize, Signal,
+    QAbstractItemView, QDialog, QHBoxLayout, QLineEdit, QMessageBox, QPushButton, QTreeView, QVBoxLayout, QWidget
 )
 
 from jnp3.gui import accept_warning, run_some_task

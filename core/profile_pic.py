@@ -1,5 +1,5 @@
 # coding: utf8
-from PySide6.QtGui import QIcon
+from compat import QIcon
 
 from jnp3.gui import get_icon_from_svg
 

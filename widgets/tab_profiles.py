@@ -1,13 +1,8 @@
 # coding: utf8
-from PySide6.QtCore import (
-    QAbstractTableModel, QModelIndex, Qt, QPoint, QSize
-)
-from PySide6.QtGui import (
-    QFont, QAction, QIcon,
-)
-from PySide6.QtWidgets import (
-    QWidget, QTreeView,
-    QVBoxLayout, QMenu, QMessageBox,
+from compat import (
+    Qt, QAbstractTableModel, QModelIndex, QPoint, QSize,
+    QAction, QFont, QIcon,
+    QMenu, QMessageBox, QTreeView, QVBoxLayout, QWidget,
 )
 
 from chromy.structs import Profile
@@ -17,6 +12,7 @@ from core.utils import (
     ProfileSortFilterProxyModel,
     open_profiles,
     get_profile_picture,
+    get_exec,
 )
 from .da_raw_data import DaRawData
 
@@ -148,7 +144,7 @@ class TabProfiles(QWidget):
         dr.show()
 
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
-        self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
+        get_exec(self.menu_ctx)(self.trv_m.viewport().mapToGlobal(pos))
 
     def update_model(
             self,

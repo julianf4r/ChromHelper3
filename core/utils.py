@@ -2,17 +2,19 @@
 import time
 import subprocess
 from pathlib import Path
-from PySide6.QtCore import (
-    QModelIndex, QSortFilterProxyModel, Qt,
-)
-from PySide6.QtGui import (
-    QRgba64, QIcon,
-)
-from PySide6.QtWidgets import QWidget, QMessageBox
+from typing import Callable
 
+from compat import (
+    Qt, QModelIndex, QSortFilterProxyModel,
+    QIcon,
+    QMessageBox, QWidget,
+)
 from jnp3.path import path_not_exist
 from jnp3.dict import get_with_chained_keys
-from jnp3.gui import create_round_icon_from_pixmap, create_mono_icon
+from jnp3.gui import (
+    create_round_icon_from_pixmap, create_mono_icon,
+    argb32_to_rgb,
+)
 
 from chromy import Profile
 
@@ -262,7 +264,7 @@ def get_profile_picture(browser: str, profile: Profile) -> QIcon:
         if len(profile.avatar_icon) != 0:
             return QIcon(get_icon_path(profile.avatar_icon, f"{browser}_avatars"))
 
-    return create_mono_icon(QRgba64.fromArgb32(4294967296 + profile.default_avatar_fill_color), "round")
+    return create_mono_icon(argb32_to_rgb(4294967296 + profile.default_avatar_fill_color), "round")
 
 
 class ProfileSortFilterProxyModel(QSortFilterProxyModel):
@@ -274,3 +276,10 @@ class ProfileSortFilterProxyModel(QSortFilterProxyModel):
             return sort_profiles_id_func(left) < sort_profiles_id_func(right)
 
         return super().lessThan(source_left, source_right)
+
+
+def get_exec(obj) -> Callable:
+    if hasattr(obj, "exec"):
+        return obj.exec
+    else:
+        return obj.exec_

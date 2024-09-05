@@ -2,21 +2,17 @@
 import os
 import sys
 from pathlib import Path
-from PySide6.QtCore import (
-    QSize, Qt, QAbstractListModel,
-    QModelIndex, Signal,
-)
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QComboBox, QLineEdit, QDialog,
-    QMessageBox, QFileDialog,
+
+from compat import (
+    Qt, QAbstractListModel, QModelIndex, QSize, Signal,
+    QIcon,
+    QComboBox, QDialog, QFileDialog, QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QVBoxLayout, QWidget,
 )
 
 from jnp3.gui import CardsArea, Card, accept_warning
 from chromy import get_browser_exec_path, get_browser_data_path
 
-from core.utils import get_icon_path, SUPPORTED_BROWSERS
+from core.utils import get_icon_path, SUPPORTED_BROWSERS, get_exec
 from core.db_operations import DBManger
 
 
@@ -240,7 +236,7 @@ class TabConfig(QWidget):
         exists_names = [c.title for c in self.ca_m.cards]
         de = DaUserDataEdit(exists_names, self)
         de.setWindowTitle("添加用户数据")
-        state = de.exec()
+        state = get_exec(de)()
         if state == QDialog.DialogCode.Accepted:
             wg_ud = WgUserDataDisplay(self)
             name = de.lne_name.text()

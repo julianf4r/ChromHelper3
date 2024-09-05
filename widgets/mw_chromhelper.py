@@ -1,16 +1,10 @@
 # coding: utf8
 from logging import Logger
 
-from PySide6.QtCore import (
-    QSize, QAbstractTableModel,
-    QModelIndex, Qt, QPoint,
-)
-from PySide6.QtGui import QIcon, QFont, QAction
-from PySide6.QtWidgets import (
-    QMainWindow, QWidget,
-    QHBoxLayout, QVBoxLayout,
-    QTabWidget, QPushButton,
-    QTreeView, QMessageBox, QMenu,
+from compat import (
+    Qt, QAbstractTableModel, QModelIndex, QPoint, QSize,
+    QAction, QFont, QIcon,
+    QHBoxLayout, QMainWindow, QMenu, QMessageBox, QPushButton, QTabWidget, QTreeView, QVBoxLayout, QWidget
 )
 
 from jnp3.gui import (
@@ -25,7 +19,7 @@ from .tab_bookmarks import TabBookmarks
 from .tab_config import TabConfig
 
 from core.db_operations import DBManger
-from core.utils import get_icon_path
+from core.utils import get_icon_path, get_exec
 
 
 class UserDataListModel(QAbstractTableModel):
@@ -214,7 +208,7 @@ class MwChromHelper(QMainWindow):
         self.on_trv_left_double_clicked(index)
 
     def on_trv_left_custom_context_menu_requested(self, pos: QPoint):
-        self.trv_menu_ctx.exec(self.trv_left.viewport().mapToGlobal(pos))
+        get_exec(self.trv_menu_ctx)(self.trv_left.viewport().mapToGlobal(pos))
 
     def on_trv_left_double_clicked(self, index: QModelIndex):
         self.update_by_one_index(index, force=False)

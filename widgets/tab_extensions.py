@@ -1,17 +1,10 @@
 # coding: utf8
 from typing import Callable
 
-from PySide6.QtCore import (
-    QAbstractTableModel, QPoint,
-    QModelIndex, Qt, QSortFilterProxyModel,
-    QSize,
-)
-from PySide6.QtGui import (
-    QIcon, QFont, QAction,
-)
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QTreeView, QMenu,
-    QMessageBox,
+from compat import (
+    Qt, QAbstractTableModel, QModelIndex, QPoint, QSize, QSortFilterProxyModel,
+    QAction, QFont, QIcon,
+    QMenu, QMessageBox, QTreeView, QVBoxLayout, QWidget,
 )
 
 from jnp3.gui import accept_warning, run_some_task
@@ -22,7 +15,8 @@ from .da_raw_data import DaRawData
 from core.utils import (
     sort_profiles_id_func,
     ProfileSortFilterProxyModel,
-    get_icon_path
+    get_icon_path,
+    get_exec,
 )
 
 
@@ -170,7 +164,7 @@ class TabExtensions(QWidget):
         self.on_trv_m_double_clicked(index)
 
     def on_trv_m_custom_context_menu_requested(self, pos: QPoint):
-        self.menu_ctx.exec(self.trv_m.viewport().mapToGlobal(pos))
+        get_exec(self.menu_ctx)(self.trv_m.viewport().mapToGlobal(pos))
 
     def on_trv_m_double_clicked(self, index: QModelIndex):
         ext_id: str = index.data(Qt.ItemDataRole.UserRole)
@@ -194,7 +188,7 @@ class TabExtensions(QWidget):
         ds.trv_p.setModel(proxy_model)
 
         ds.deletion_finished.connect(self.update_after_deletion)
-        ds.exec()
+        get_exec(ds)()
 
     def update_after_deletion(self):
         self.extensions_model.update_data(self.extensions)

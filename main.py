@@ -2,16 +2,17 @@
 import sys
 import logging
 from pathlib import Path
-from PySide6.QtWidgets import QApplication
 
 from jnp3.path import get_log_dir
 from jnp3.misc import get_excepthook_for
 
+from compat import QApplication
 from widgets.mw_chromhelper import MwChromHelper
+from core.utils import get_exec
 import rc_chromhelper3
 
 
-__version__ = '1.2.1'
+__version__ = '1.3.0'
 __version_info__ = tuple(map(int, __version__.split('.')))
 
 ORG_NAME = "JnPrograms"
@@ -35,7 +36,7 @@ def main():
     win = MwChromHelper(APP_NAME, __version__, get_app_dir(), logger)
     win.setWindowTitle(f"{APP_NAME} v{__version__}")
     win.show()
-    return app.exec()
+    return get_exec(app)()
 
 
 if __name__ == '__main__':

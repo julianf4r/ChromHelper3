@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass, field
 from Sqlite3Helper import (
     Sqlite3Worker, Column, DataType,
-    Operand,
+    Operand, Table,
 )
 
 from chromy import get_browser_exec_path, get_browser_data_path
@@ -11,7 +11,7 @@ from .utils import SUPPORTED_BROWSERS
 
 
 @dataclass
-class UserDataTable(object):
+class UserDataTable(Table):
     table: str = "userdata"
 
     id = Column("id", DataType.INTEGER, primary_key=True)
@@ -19,14 +19,6 @@ class UserDataTable(object):
     type = Column("type", DataType.TEXT)
     exec_path = Column("exec_path", DataType.TEXT)
     data_path = Column("data_path", DataType.TEXT)
-
-    all: list[Column] = field(default_factory=list)
-
-    def __post_init__(self):
-        for i in self.__dir__():
-            a = getattr(self, i)
-            if isinstance(a, Column):
-                self.all.append(a)
 
 
 U = UserDataTable()
